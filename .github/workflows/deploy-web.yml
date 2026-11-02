@@ -1,0 +1,33 @@
+name: Deploy web app
+
+# Publishes the drinkers app as a website on Expo Hosting (EAS). Needs the EXPO_TOKEN secret.
+
+on:
+  push:
+    branches: [main, expo-test-build] # expo-test-build is temporary, for trying it before merging
+    paths: ['mobile/**', '.github/workflows/deploy-web.yml']
+  workflow_dispatch:
+
+concurrency: deploy-web
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EXPO_PUBLIC_SUPABASE_URL: https://yhttayboxljswczexspg.supabase.co
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_8aeFY-i4xdQPbQ7kA_BRjA_WfoJR18a
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci
+      - run: npx expo export --platform web
+      - name: Publish
+        run: npx --yes eas-cli@latest deploy --prod --non-interactive --alias ratemyguin 2>&1 | tee deploy.log || npx --yes eas-cli@latest deploy --prod --non-interactive 2>&1 | tee deploy.log
