@@ -162,7 +162,7 @@ function Reply({ rating, onReply }: { rating: { id: string; overall: number; not
       <H2>Latest review</H2>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
         <Initials name={who.name} size={34} />
-        <Body style={{ flex: 1, fontFamily: 'Figtree_700Bold' }}>{who.name}</Body>
+        <Body style={{ flex: 1, fontFamily: 'Jost_600SemiBold' }}>{who.name}</Body>
         <H2>{rating.overall.toFixed(1)}</H2>
       </View>
       <Body>{rating.note}</Body>

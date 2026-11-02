@@ -1,5 +1,5 @@
 // RateMyGuin design tokens, from the v0 brand board.
-// Stout and cream carry the pint, pub green is the main action, brass is for awards only.
+// Black (stout), cream and Guinness-style gold. Gold is the main action; deep gold on light, bright gold on dark.
 
 import { useColorScheme } from 'react-native';
 
@@ -13,15 +13,15 @@ export const Colors = {
     inkSubtle: '#7A6F5E',
     border: '#E3DBCB',
 
-    brand: '#1B5E45', // pub green: main actions, white text 7.7:1
-    brandPressed: '#16573F',
-    brandTint: '#E2EFE8',
+    brand: '#8A6516', // deep gold: main actions, white text 5:1
+    brandPressed: '#755512',
+    brandTint: '#F3E9D2',
     onBrand: '#FFFFFF',
 
     cream: '#F6EEDC', // the head
     stout: '#17110D',
 
-    brass: '#D9A93F', // awards, fills only
+    brass: '#D4A94A', // awards, fills only
     brassText: '#8F6310',
     brassTint: '#F7EBCB',
 
@@ -41,15 +41,15 @@ export const Colors = {
     inkSubtle: '#8E826E',
     border: '#3A2D24',
 
-    brand: '#5DBE96',
-    brandPressed: '#4CA883',
-    brandTint: '#1F3A2E',
+    brand: '#D4A94A',
+    brandPressed: '#C29736',
+    brandTint: '#3A2C12',
     onBrand: '#17110D',
 
     cream: '#F6EEDC',
     stout: '#17110D',
 
-    brass: '#D9A93F',
+    brass: '#D4A94A',
     brassText: '#F2B34A',
     brassTint: '#3A2C12',
 
@@ -69,12 +69,12 @@ export function usePalette(): Palette {
 }
 
 export const Fonts = {
-  display: 'BricolageGrotesque_800ExtraBold',
-  displayBold: 'BricolageGrotesque_700Bold',
-  body: 'Figtree_400Regular',
-  bodyMedium: 'Figtree_500Medium',
-  bodySemi: 'Figtree_600SemiBold',
-  bodyBold: 'Figtree_700Bold',
+  display: 'CormorantGaramond_700Bold',
+  displayBold: 'CormorantGaramond_600SemiBold',
+  body: 'Jost_400Regular',
+  bodyMedium: 'Jost_500Medium',
+  bodySemi: 'Jost_600SemiBold',
+  bodyBold: 'Jost_700Bold',
 } as const;
 
 export const Radius = { sm: 10, md: 16, lg: 22, xl: 28, pill: 999 } as const;

@@ -5,7 +5,7 @@ const variant = process.env.APP_VARIANT === 'pubs' ? 'pubs' : 'drinkers';
 
 const VARIANTS = {
   drinkers: {
-    name: 'RateMyGuin',
+    name: 'ratemyGuin',
     slug: 'ratemyguin',
     scheme: 'ratemyguin',
     bundleId: 'com.ratemyguin.app',
@@ -33,6 +33,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   version: '0.1.0',
   orientation: 'portrait',
   userInterfaceStyle: 'automatic',
+  icon: './assets/icon.png',
   ios: {
     bundleIdentifier: v.bundleId,
     supportsTablet: false,
@@ -50,6 +51,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   plugins: [
     'expo-router',
     'expo-font',
+    ['expo-splash-screen', { image: './assets/splash-icon.png', imageWidth: 110, backgroundColor: '#17110D' }],
     [
       'expo-location',
       { locationWhenInUsePermission: 'RateMyGuin checks you are in the pub so your rating counts as a verified visit.' },

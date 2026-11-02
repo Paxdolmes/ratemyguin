@@ -75,7 +75,7 @@ export default function Discover() {
       </View>
       {rated === 0 && list.length > 0 ? (
         <View style={{ backgroundColor: c.stout, borderRadius: 20, padding: 18, gap: 10 }}>
-          <Body style={{ color: c.cream, fontFamily: 'BricolageGrotesque_700Bold', fontSize: 20 }}>No pints rated around here yet</Body>
+          <Body style={{ color: c.cream, fontFamily: 'CormorantGaramond_700Bold', fontSize: 20 }}>No pints rated around here yet</Body>
           <Body style={{ color: c.cream, opacity: 0.8 }}>Rate the first Guinness and put your local at the top of the table. Pubs need 3 ratings to get an Excellence Index.</Body>
           <Button label="Rate a pint" onPress={() => router.push('/rate')} />
         </View>
@@ -127,7 +127,7 @@ export function PubRow({ pub, rank }: { pub: PubWithScore; rank: number | null }
     <Pressable onPress={() => router.push(`/pub/${pub.id}`)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: c.surface, borderRadius: 20, padding: 14, borderWidth: 1, borderColor: c.border }}>
       <Initials name={pub.name.replace(/^The /, '')} size={44} />
       <View style={{ flex: 1, gap: 3 }}>
-        <Body style={{ fontFamily: 'Figtree_700Bold' }} numberOfLines={1}>
+        <Body style={{ fontFamily: 'Jost_600SemiBold' }} numberOfLines={1}>
           {rank ? `${rank}. ` : ''}
           {pub.name}
         </Body>

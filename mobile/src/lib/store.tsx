@@ -19,11 +19,22 @@ export type Rating = PintRating & {
   reply?: string | null;
   authorName?: string | null;
   authorHandle?: string | null;
+  tags?: string[];
 };
 
-export type PubWithScore = Pub & { score: IndexBreakdown; distanceM: number | null };
+export type PubExtras = {
+  pintScore?: number | null; // the glass alone
+  pubScore?: number | null; // room and service
+  features?: string[];
+  logoUrl?: string | null;
+  imageUrl?: string | null;
+  venueNote?: string | null;
+  linesCleanedOn?: string | null;
+};
 
-type NewRating = Omit<Rating, 'id' | 'userId' | 'ratedAt' | 'verification' | 'weight'> & { fix: Fix | null };
+export type PubWithScore = Pub & PubExtras & { score: IndexBreakdown; distanceM: number | null };
+
+type NewRating = Omit<Rating, 'id' | 'userId' | 'ratedAt' | 'verification' | 'weight'> & { fix: Fix | null; features?: string[] };
 
 type Result = { ok: true; rating: Rating } | { ok: false; reason: string };
 
@@ -172,6 +183,13 @@ type DirectoryRow = {
   median_price_pence: number | null;
   excellence_index: number | null;
   award: AwardTier | null;
+  pint_score?: number | null;
+  pub_score?: number | null;
+  features?: string[] | null;
+  logo_url?: string | null;
+  image_url?: string | null;
+  venue_note?: string | null;
+  lines_cleaned_on?: string | null;
 };
 
 type RatingRow = {
@@ -194,6 +212,7 @@ type RatingRow = {
   handle: string | null;
   anonymous: boolean;
   reply: string | null;
+  tags: string[] | null;
 };
 
 const num = (v: unknown) => (v == null ? null : Number(v));
@@ -211,6 +230,13 @@ function toPub(r: DirectoryRow, here: { lat: number; lng: number }): PubWithScor
     atmosphere: r.atmosphere ?? 'Traditional',
     hours: r.opening_hours ?? 'Hours not listed',
     distanceM: Math.round(distanceMetres(here, r)),
+    pintScore: r.pint_score ?? null,
+    pubScore: r.pub_score ?? null,
+    features: r.features ?? [],
+    logoUrl: r.logo_url ?? null,
+    imageUrl: r.image_url ?? null,
+    venueNote: r.venue_note ?? null,
+    linesCleanedOn: r.lines_cleaned_on ?? null,
     score: {
       index: r.excellence_index,
       ratingCount: r.rating_count,
@@ -246,8 +272,9 @@ function toRating(r: RatingRow): Rating {
     verification: r.verification,
     weight: 1, // set and kept by the database; not exposed
     note: r.note ?? '',
-    photoUri: r.photo_path,
+    photoUri: r.photo_path ? supabase.storage.from('pint-photos').getPublicUrl(r.photo_path).data.publicUrl : null,
     anonymous: r.anonymous,
+    tags: r.tags ?? [],
     reply: r.reply,
     authorName: r.display_name,
     authorHandle: r.handle,
@@ -255,7 +282,7 @@ function toRating(r: RatingRow): Rating {
 }
 
 const RATING_COLUMNS =
-  'id, pub_id, user_id, overall, taste, temperature, head, texture, pour, atmosphere, price_pence, note, photo_path, verification, rated_at, display_name, handle, anonymous, reply';
+  'id, pub_id, user_id, overall, taste, temperature, head, texture, pour, atmosphere, price_pence, note, photo_path, verification, rated_at, display_name, handle, anonymous, reply, tags';
 
 /** Pubs near here, the latest ratings, and the pubs those ratings mention. */
 async function fetchHome(here: { lat: number; lng: number }) {
@@ -363,6 +390,17 @@ function LiveStore({ children }: { children: ReactNode }) {
   const addRating = useCallback<Store['addRating']>(
     async (input) => {
       if (!profile) return { ok: false, reason: 'Sign in to rate a pint.' };
+      let photoPath: string | null = null;
+      if (input.photoUri) {
+        try {
+          const body = await (await fetch(input.photoUri)).arrayBuffer();
+          const path = `${profile.id}/${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}.jpg`;
+          const up = await supabase.storage.from('pint-photos').upload(path, body, { contentType: 'image/jpeg' });
+          if (!up.error) photoPath = path;
+        } catch {
+          // Post the rating without the photo rather than lose it.
+        }
+      }
       const { data, error: e } = await supabase
         .from('ratings')
         .insert({
@@ -378,6 +416,9 @@ function LiveStore({ children }: { children: ReactNode }) {
           price_pence: input.pricePence ?? null,
           note: input.note || null,
           anonymous: Boolean(input.anonymous),
+          photo_path: photoPath,
+          tags: input.tags ?? [],
+          features: input.features ?? [],
           fix: input.fix ? `SRID=4326;POINT(${input.fix.lng} ${input.fix.lat})` : null,
           fix_accuracy_m: input.fix?.accuracyM ?? null,
         })

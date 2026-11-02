@@ -74,7 +74,7 @@ export function PubMap({ pubs, here, height = 320, onPick }: Props) {
         iconCreateFunction: (cl: Leaflet) =>
           L.divIcon({
             className: '',
-            html: `<div style="width:38px;height:38px;border-radius:19px;background:${c.stout};color:${c.cream};display:flex;align-items:center;justify-content:center;font:700 13px Figtree_700Bold,Figtree,sans-serif;border:3px solid ${c.cream};box-shadow:0 2px 6px rgba(0,0,0,.25)">${cl.getChildCount()}</div>`,
+            html: `<div style="width:38px;height:38px;border-radius:19px;background:${c.stout};color:${c.cream};display:flex;align-items:center;justify-content:center;font:700 13px Jost_600SemiBold,Jost,sans-serif;border:3px solid ${c.cream};box-shadow:0 2px 6px rgba(0,0,0,.25)">${cl.getChildCount()}</div>`,
             iconSize: [38, 38],
           }),
       });
@@ -108,7 +108,7 @@ export function PubMap({ pubs, here, height = 320, onPick }: Props) {
         const tier = p.score.award;
         const bg = tier === 'exceptional' ? c.stout : tier === 'gold' ? c.brass : tier === 'recommended' ? c.brand : '#fff';
         const fg = tier === 'exceptional' ? c.brass : tier === 'gold' ? c.stout : tier === 'recommended' ? '#fff' : c.ink;
-        html = `<div style="transform:translate(-50%,-100%);position:absolute;left:50%;top:50%;display:flex;flex-direction:column;align-items:center"><div style="background:${bg};color:${fg};padding:3px 9px;border-radius:10px;font:800 14px 'BricolageGrotesque_800ExtraBold',sans-serif;box-shadow:0 2px 6px rgba(0,0,0,.25);border:1px solid rgba(0,0,0,.08)">${idx}</div><div style="width:8px;height:8px;background:${bg};transform:rotate(45deg);margin-top:-5px"></div></div>`;
+        html = `<div style="transform:translate(-50%,-100%);position:absolute;left:50%;top:50%;display:flex;flex-direction:column;align-items:center"><div style="background:${bg};color:${fg};padding:3px 9px;border-radius:10px;font:800 14px 'CormorantGaramond_700Bold',serif;box-shadow:0 2px 6px rgba(0,0,0,.25);border:1px solid rgba(0,0,0,.08)">${idx}</div><div style="width:8px;height:8px;background:${bg};transform:rotate(45deg);margin-top:-5px"></div></div>`;
         size = [1, 1];
       }
       const mk = L.marker([p.lat, p.lng], { icon: L.divIcon({ className: '', html, iconSize: size }), title: p.name, riseOnHover: true });

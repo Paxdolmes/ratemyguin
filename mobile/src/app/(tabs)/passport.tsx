@@ -39,7 +39,7 @@ export default function Passport() {
       </Card>
       {next ? (
         <Card style={{ gap: 8 }}>
-          <Body style={{ fontFamily: 'Figtree_700Bold' }}>Next: {next.title}</Body>
+          <Body style={{ fontFamily: 'Jost_600SemiBold' }}>Next: {next.title}</Body>
           <View style={{ height: 10, borderRadius: 5, backgroundColor: c.surfaceMuted, overflow: 'hidden' }}>
             <View style={{ width: `${(next.progress / next.target) * 100}%`, height: 10, backgroundColor: c.brand }} />
           </View>
@@ -54,7 +54,7 @@ export default function Passport() {
           const p = pub(s.pubId);
           return (
             <Pressable key={s.pubId} disabled={!p} onPress={() => p && router.push(`/pub/${p.id}`)} style={{ width: '31%', aspectRatio: 1, borderRadius: 999, borderWidth: 2, borderColor: s.verified ? c.brand : c.border, borderStyle: s.verified ? 'solid' : 'dashed', alignItems: 'center', justifyContent: 'center', padding: 8 }}>
-              <Small style={{ textAlign: 'center', color: c.ink, fontFamily: 'Figtree_700Bold' }}>{p?.name.replace(/^The /, '') ?? 'Dublin pub'}</Small>
+              <Small style={{ textAlign: 'center', color: c.ink, fontFamily: 'Jost_600SemiBold' }}>{p?.name.replace(/^The /, '') ?? 'Dublin pub'}</Small>
               <Small style={{ fontSize: 11 }}>{new Date(s.at).toLocaleDateString('en-GB', { month: 'short', year: '2-digit' })}</Small>
             </Pressable>
           );
@@ -64,7 +64,7 @@ export default function Passport() {
       {all.map((b) => (
         <Card key={b.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', opacity: b.earnedAt ? 1 : 0.55 }}>
           <View>
-            <Body style={{ fontFamily: 'Figtree_700Bold' }}>{b.title}</Body>
+            <Body style={{ fontFamily: 'Jost_600SemiBold' }}>{b.title}</Body>
             <Small>{b.detail}</Small>
           </View>
           <Small style={{ color: b.earnedAt ? c.success : c.inkMuted }}>{b.earnedAt ? 'Earned' : `${b.progress}/${b.target}`}</Small>

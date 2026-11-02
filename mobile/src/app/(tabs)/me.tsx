@@ -40,7 +40,7 @@ export default function Me() {
         <Pressable key={r.id} onPress={() => router.push(`/card/${r.id}`)}>
           <Card style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
             <View>
-              <Body style={{ fontFamily: 'Figtree_700Bold' }}>{pub(r.pubId)?.name ?? 'A pub'}</Body>
+              <Body style={{ fontFamily: 'Jost_600SemiBold' }}>{pub(r.pubId)?.name ?? 'A pub'}</Body>
               <Small>
                 {new Date(r.ratedAt).toLocaleDateString('en-GB')} · {formatPrice(r.pricePence)} · {r.verification !== 'none' ? 'Verified' : 'Unverified'}
               </Small>
@@ -61,7 +61,7 @@ export default function Me() {
               <Initials name={who} size={36} />
               <View style={{ flex: 1 }}>
                 <Body numberOfLines={1}>
-                  <Body style={{ fontFamily: 'Figtree_700Bold' }}>{who.split(' ')[0]}</Body> rated {p.name}
+                  <Body style={{ fontFamily: 'Jost_600SemiBold' }}>{who.split(' ')[0]}</Body> rated {p.name}
                 </Body>
                 <Small numberOfLines={1}>{r.note}</Small>
               </View>

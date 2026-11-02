@@ -1,5 +1,5 @@
-import { BricolageGrotesque_700Bold, BricolageGrotesque_800ExtraBold } from '@expo-google-fonts/bricolage-grotesque';
-import { Figtree_400Regular, Figtree_500Medium, Figtree_600SemiBold, Figtree_700Bold } from '@expo-google-fonts/figtree';
+import { CormorantGaramond_600SemiBold, CormorantGaramond_700Bold } from '@expo-google-fonts/cormorant-garamond';
+import { Jost_400Regular, Jost_500Medium, Jost_600SemiBold, Jost_700Bold } from '@expo-google-fonts/jost';
 import { useFonts } from 'expo-font';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
@@ -17,12 +17,12 @@ export default function RootLayout() {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
   const c = Colors[scheme];
   const [loaded, error] = useFonts({
-    BricolageGrotesque_700Bold,
-    BricolageGrotesque_800ExtraBold,
-    Figtree_400Regular,
-    Figtree_500Medium,
-    Figtree_600SemiBold,
-    Figtree_700Bold,
+    CormorantGaramond_600SemiBold,
+    CormorantGaramond_700Bold,
+    Jost_400Regular,
+    Jost_500Medium,
+    Jost_600SemiBold,
+    Jost_700Bold,
   });
   const ready = loaded || Boolean(error);
   useEffect(() => {
@@ -37,7 +37,7 @@ export default function RootLayout() {
     <AuthProvider>
       <StoreProvider>
         <ThemeProvider value={theme}>
-          <Stack screenOptions={{ headerShadowVisible: false, headerTitleStyle: { fontFamily: 'Figtree_700Bold' }, headerBackButtonDisplayMode: 'minimal' }}>
+          <Stack screenOptions={{ headerShadowVisible: false, headerTitleStyle: { fontFamily: 'Jost_600SemiBold' }, headerBackButtonDisplayMode: 'minimal' }}>
             <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="pubs" options={{ headerShown: false }} />

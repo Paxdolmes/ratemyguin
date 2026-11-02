@@ -32,7 +32,7 @@ export default function RateTab() {
       {rest.map((p) => (
         <Card key={p.id} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ flex: 1 }}>
-            <Body style={{ fontFamily: 'Figtree_700Bold' }}>{p.name}</Body>
+            <Body style={{ fontFamily: 'Jost_600SemiBold' }}>{p.name}</Body>
             <Small>
               {p.neighbourhood} · {formatDistance(p.distanceM)}
             </Small>

@@ -57,7 +57,7 @@ export default function Leaderboards() {
           <Small>10 for a new verified pub, 15 if it&apos;s Gold Standard or better, 2 for a repeat visit.</Small>
           {people.map((r) => (
             <Card key={r.userId} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, borderColor: r.userId === me?.id ? c.brand : c.border }}>
-              <Body style={{ width: 24, fontFamily: 'Figtree_700Bold' }}>{r.rank}</Body>
+              <Body style={{ width: 24, fontFamily: 'Jost_600SemiBold' }}>{r.rank}</Body>
               <Initials name={r.name} size={36} />
               <Body style={{ flex: 1 }}>{r.name}</Body>
               <H2>{r.points}</H2>

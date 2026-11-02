@@ -1,44 +1,51 @@
-// The RateMyGuin mark, direction A "The Tick" from the v0 brand board:
-// a pint with a cream head and a tick in the body. Paths copied from docs/brand/direction-a.svg.
+// The ratemyGuin mark: a simple stout-glass silhouette with a cream head and a fine
+// gold outline, and the serif wordmark "ratemyGuin". Same glass as the website.
 
 import { Text, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { ClipPath, Defs, Path, Rect } from 'react-native-svg';
 
 import { Fonts, usePalette } from '@/constants/theme';
 
 const STOUT = '#17110D';
-const PORTER = '#2B1E17';
 const CREAM = '#F6EEDC';
-const BRASS = '#D9A93F';
+const GILT = '#D4A94A';
+const GOLD = '#8A6516';
+const GLASS = 'M7.2 3 H32.8 C33.3 9 34.2 17 34.2 24 C34.2 38 30.3 50 29.4 58 L29.4 59.6 Q29.4 61 28.0 61 H12.0 Q10.6 61 10.6 59.6 L10.6 58 C9.7 50 5.8 38 5.8 24 C5.8 17 6.7 9 7.2 3 Z';
 
 type Tone = 'light' | 'dark' | 'pubs';
 
+/** Glass is drawn on a 40 x 64 grid; size is the height. */
 export function Mark({ size = 32, tone }: { size?: number; tone?: Tone }) {
   const c = usePalette();
   const t: Tone = tone ?? (c.bg === STOUT ? 'dark' : 'light');
-  const line = t === 'dark' ? CREAM : STOUT;
-  const body = t === 'dark' ? PORTER : STOUT;
-  const tick = t === 'pubs' ? BRASS : CREAM;
+  const line = t === 'light' ? STOUT : GILT;
+  const stroke = size >= 80 ? 1.1 : size >= 40 ? 1.7 : 2.4;
   return (
-    <Svg width={size} height={size} viewBox="0 0 36 36">
-      <Path d="M6.8 11.5H29.2L26.8 31.2Q26.6 33 24.8 33H11.2Q9.4 33 9.2 31.2Z" fill={body} stroke={line} strokeWidth={1.8} strokeLinejoin="round" />
-      <Path d="M6.8 11.5L6 6C6 3 9 2 11 3C12.5 1.2 16 1 18 2.5C20 1.2 23.5 1.5 25 3C27.5 2 30 3.5 30 6L29.2 11.5Z" fill={CREAM} stroke={line} strokeWidth={1.8} strokeLinejoin="round" />
-      <Path d="M12.5 21.5L16.5 25.5L24 17" fill="none" stroke={tick} strokeWidth={3.2} strokeLinecap="round" strokeLinejoin="round" />
+    <Svg width={(size * 40) / 64} height={size} viewBox="0 0 40 64">
+      <Defs>
+        <ClipPath id="glass">
+          <Path d={GLASS} />
+        </ClipPath>
+      </Defs>
+      <Path d={GLASS} fill={STOUT} />
+      <Rect x={0} y={0} width={40} height={10} fill={CREAM} clipPath="url(#glass)" />
+      <Path d={GLASS} fill="none" stroke={line} strokeWidth={stroke} strokeLinejoin="round" />
     </Svg>
   );
 }
 
-export function Lockup({ pubs, size = 22 }: { pubs?: boolean; size?: number }) {
+export function Lockup({ pubs, size = 24 }: { pubs?: boolean; size?: number }) {
   const c = usePalette();
+  const dark = c.bg === STOUT;
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-      <Mark size={size * 1.3} tone={pubs ? 'pubs' : undefined} />
-      <Text style={{ fontFamily: Fonts.display, fontSize: size, color: c.ink, letterSpacing: -0.5 }}>
-        <Text style={{ fontFamily: Fonts.displayBold }}>ratemy</Text>guin
+      <Mark size={size * 1.25} tone={pubs ? 'pubs' : undefined} />
+      <Text style={{ fontFamily: Fonts.displayBold, fontSize: size, color: c.ink }}>
+        ratemy<Text style={{ color: dark ? GILT : GOLD }}>Guin</Text>
       </Text>
       {pubs ? (
         <View style={{ backgroundColor: c.brand, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 }}>
-          <Text style={{ fontFamily: Fonts.bodyBold, fontSize: 12, color: c.onBrand }}>for pubs</Text>
+          <Text style={{ fontFamily: Fonts.bodySemi, fontSize: 12, color: c.onBrand }}>for pubs</Text>
         </View>
       ) : null}
     </View>

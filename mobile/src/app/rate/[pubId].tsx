@@ -8,6 +8,7 @@ import { Image, Pressable, ScrollView, Switch, Text, TextInput, View } from 'rea
 import { Body, Button, Card, Chip, H1, ScorePicker, Small } from '@/components/ui';
 import { Fonts, usePalette } from '@/constants/theme';
 import { SUB_SCORE_LABELS, SUB_SCORES, validateRating, type SubScore } from '@/domain/scores';
+import { FEATURES, TAGS, type FeatureKey, type TagKey } from '@/domain/tags';
 import { verifyVisit, type Fix } from '@/domain/trust';
 import { useAccountGate } from '@/lib/auth';
 import { useStore } from '@/lib/store';
@@ -27,6 +28,9 @@ export default function RatePint() {
   const [note, setNote] = useState('');
   const [photo, setPhoto] = useState<string | null>(null);
   const [anonymous, setAnonymous] = useState(false);
+  const [tags, setTags] = useState<TagKey[]>([]);
+  const [features, setFeatures] = useState<FeatureKey[]>([]);
+  const flip = <T,>(xs: T[], x: T) => (xs.includes(x) ? xs.filter((y) => y !== x) : [...xs, x]);
   const [fix, setFix] = useState<Fix | null>(null);
   const [locating, setLocating] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +64,10 @@ export default function RatePint() {
   const set = (k: keyof Scores) => (v: number) => setScores((s) => ({ ...s, [k]: v }));
 
   const pickPhoto = async () => {
-    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [4, 5] });
+    const cam = await ImagePicker.requestCameraPermissionsAsync().catch(() => null);
+    const res = cam?.granted
+      ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [4, 5] })
+      : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7, allowsEditing: true, aspect: [4, 5] });
     if (!res.canceled) setPhoto(res.assets[0].uri);
   };
 
@@ -71,7 +78,7 @@ export default function RatePint() {
     const invalid = validateRating(draft);
     if (invalid) return setError(invalid);
     setBusy(true);
-    const res = await addRating({ pubId: p.id, ...draft, note: note.trim(), photoUri: photo, anonymous, fix });
+    const res = await addRating({ pubId: p.id, ...draft, note: note.trim(), photoUri: photo, anonymous, fix, tags, features });
     setBusy(false);
     if (!res.ok) return setError(res.reason);
     router.replace(`/card/${res.rating.id}`);
@@ -109,7 +116,23 @@ export default function RatePint() {
       </Card>
 
       <Card style={{ gap: 12 }}>
-        <Body style={{ fontFamily: 'Figtree_700Bold' }}>Price paid</Body>
+        <Body style={{ fontFamily: Fonts.bodySemi }}>Why that score?</Body>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {(Object.keys(TAGS) as TagKey[]).map((t) => (
+            <Chip key={t} label={TAGS[t].label} active={tags.includes(t)} onPress={() => setTags((xs) => flip(xs, t))} />
+          ))}
+        </View>
+        <Body style={{ fontFamily: Fonts.bodySemi, marginTop: 6 }}>Does the pub have…</Body>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {(Object.keys(FEATURES) as FeatureKey[]).map((f) => (
+            <Chip key={f} label={FEATURES[f]} active={features.includes(f)} onPress={() => setFeatures((xs) => flip(xs, f))} />
+          ))}
+        </View>
+        <Small>Optional. Features help others filter and never change the score.</Small>
+      </Card>
+
+      <Card style={{ gap: 12 }}>
+        <Body style={{ fontFamily: 'Jost_600SemiBold' }}>Price paid</Body>
         <TextInput
           value={price}
           onChangeText={setPrice}

@@ -1,10 +1,12 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { BadgeCheck, Clock, MapPin } from 'lucide-react-native';
-import { useEffect } from 'react';
-import { ScrollView, View } from 'react-native';
+import { BadgeCheck, Clock, Footprints, MapPin, TrainFront } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
+import { Image, Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { AwardChip, Body, Button, Card, H1, H2, IndexScore, Initials, ScoreBar, Small } from '@/components/ui';
-import { usePalette } from '@/constants/theme';
+import { Fonts, usePalette } from '@/constants/theme';
+import { FEATURES, TAGS, type FeatureKey, type TagKey } from '@/domain/tags';
+import { supabase } from '@/lib/supabase';
 import { AWARD_DISCLAIMER, AWARDS, MIN_RATINGS_FOR_INDEX } from '@/domain/scores';
 import { formatDistance, formatPrice, useStore } from '@/lib/store';
 
@@ -16,6 +18,13 @@ export default function PubProfile() {
     void loadPub(id);
   }, [id, loadPub]);
   const p = pub(id);
+  const [stations, setStations] = useState<{ name: string; walk_minutes: number }[]>([]);
+  useEffect(() => {
+    if (!p) return;
+    supabase
+      .rpc('nearest_stations', { p_lat: p.lat, p_lng: p.lng })
+      .then(({ data }) => setStations((data ?? []) as { name: string; walk_minutes: number }[]), () => {});
+  }, [p?.id]); // eslint-disable-line react-hooks/exhaustive-deps
   if (!p) return <Body style={{ padding: 20 }}>Loading…</Body>;
   const s = p.score;
   const ratings = ratingsFor(p.id).slice(0, 12);
@@ -24,7 +33,12 @@ export default function PubProfile() {
     <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 48 }}>
       <Stack.Screen options={{ title: p.name }} />
       <View style={{ gap: 6 }}>
-        <H1>{p.name}</H1>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          {p.logoUrl || p.imageUrl ? (
+            <Image source={{ uri: (p.logoUrl ?? p.imageUrl)! }} style={{ width: 52, height: 52, borderRadius: 14, backgroundColor: c.surfaceMuted }} resizeMode="contain" />
+          ) : null}
+          <H1 style={{ flex: 1 }}>{p.name}</H1>
+        </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <MapPin size={14} color={c.inkMuted} />
           <Small>
@@ -39,6 +53,39 @@ export default function PubProfile() {
         </View>
       </View>
 
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14, alignItems: 'center' }}>
+        <Pressable
+          onPress={() =>
+            Linking.openURL(
+              Platform.OS === 'ios'
+                ? `http://maps.apple.com/?daddr=${p.lat},${p.lng}&dirflg=w`
+                : `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}&travelmode=walking`,
+            )
+          }
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
+        >
+          <Footprints size={16} color={c.brand} />
+          <Text style={{ fontFamily: Fonts.bodySemi, color: c.brand }}>Walking directions</Text>
+        </Pressable>
+        {stations.map((st) => (
+          <View key={st.name} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <TrainFront size={14} color={c.inkMuted} />
+            <Small>
+              {st.name} · {st.walk_minutes} min
+            </Small>
+          </View>
+        ))}
+      </View>
+      {p.features && p.features.length > 0 ? (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+          {p.features.map((f) => (
+            <View key={f} style={{ borderWidth: 1, borderColor: c.border, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 }}>
+              <Small style={{ color: c.ink }}>{FEATURES[f as FeatureKey] ?? f}</Small>
+            </View>
+          ))}
+        </View>
+      ) : null}
+
       <Card style={{ gap: 14 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <View style={{ gap: 4 }}>
@@ -50,6 +97,20 @@ export default function PubProfile() {
             {s.award ? <Small>{AWARDS[s.award].blurb}</Small> : null}
           </View>
         </View>
+        {p.pintScore != null || p.pubScore != null ? (
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            {[
+              ['Pint', p.pintScore, 'the glass alone'],
+              ['Pub', p.pubScore, 'room and service'],
+            ].map(([k, v, sub]) => (
+              <View key={k as string} style={{ flex: 1, alignItems: 'center', borderWidth: 1, borderColor: c.border, borderRadius: 14, paddingVertical: 8 }}>
+                <Small>{k as string}</Small>
+                <Text style={{ fontFamily: Fonts.display, fontSize: 30, color: k === 'Pint' ? c.brand : c.ink }}>{v ?? '–'}</Text>
+                <Small>{sub as string}</Small>
+              </View>
+            ))}
+          </View>
+        ) : null}
         {s.index == null ? <Body muted>Needs {MIN_RATINGS_FOR_INDEX} ratings for a score. Be one of the first.</Body> : null}
         <Small>
           {s.ratingCount} pints in the last year · {Math.round(s.verifiedShare * 100)}% verified visits
@@ -62,6 +123,14 @@ export default function PubProfile() {
         {s.award ? <Small>{AWARD_DISCLAIMER}</Small> : null}
       </Card>
 
+      {p.venueNote || p.linesCleanedOn ? (
+        <Card style={{ gap: 6 }}>
+          <Body style={{ fontFamily: Fonts.bodySemi }}>From the pub</Body>
+          {p.venueNote ? <Body>{p.venueNote}</Body> : null}
+          {p.linesCleanedOn ? <Small>Lines last cleaned {new Date(p.linesCleanedOn).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}</Small> : null}
+        </Card>
+      ) : null}
+
       <Button label="Rate a pint here" onPress={() => router.push(`/rate/${p.id}`)} />
 
       <H2>Latest pints</H2>
@@ -72,7 +141,7 @@ export default function PubProfile() {
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
               <Initials name={name} size={34} />
               <View style={{ flex: 1 }}>
-                <Body style={{ fontFamily: 'Figtree_700Bold' }}>{name}</Body>
+                <Body style={{ fontFamily: 'Jost_600SemiBold' }}>{name}</Body>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                   {r.verification !== 'none' ? <BadgeCheck size={13} color={c.success} /> : null}
                   <Small>
@@ -84,7 +153,20 @@ export default function PubProfile() {
               </View>
               <H2>{r.overall.toFixed(1)}</H2>
             </View>
+            {r.photoUri ? <Image source={{ uri: r.photoUri }} style={{ width: '100%', height: 220, borderRadius: 12 }} resizeMode="cover" /> : null}
             {r.note ? <Body>{r.note}</Body> : null}
+            {r.tags && r.tags.length > 0 ? (
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+                {r.tags.map((t) => {
+                  const tag = TAGS[t as TagKey];
+                  return (
+                    <View key={t} style={{ backgroundColor: tag?.good ? c.brandTint : c.dangerTint, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 }}>
+                      <Small style={{ color: tag?.good ? c.brand : c.danger }}>{tag?.label ?? t}</Small>
+                    </View>
+                  );
+                })}
+              </View>
+            ) : null}
             <Small>
               Pour {r.pour} · Head {r.head} · Taste {r.taste} · Temp {r.temperature} · Texture {r.texture}
             </Small>
