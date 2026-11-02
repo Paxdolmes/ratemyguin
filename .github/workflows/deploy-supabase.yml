@@ -11,6 +11,10 @@ on:
     branches: [main]
     paths: ['supabase/**']
   workflow_dispatch:
+    inputs:
+      test_email:
+        description: Optional. Send a sign-in code to this address after deploying, to check email works.
+        required: false
 
 concurrency: deploy-supabase
 
@@ -75,3 +79,14 @@ jobs:
             echo "::warning::Sign-in email not updated ($status): $(cat response.json)"
             exit 1
           fi
+      - name: Send a test sign-in code
+        if: inputs.test_email != ''
+        env:
+          EMAIL: ${{ inputs.test_email }}
+          KEY: sb_publishable_8aeFY-i4xdQPbQ7kA_BRjA_WfoJR18a
+        run: |
+          status=$(curl -sS -o response.json -w '%{http_code}' -X POST "https://$PROJECT_REF.supabase.co/auth/v1/otp" \
+            -H "apikey: $KEY" -H "Content-Type: application/json" \
+            -d "$(jq -n --arg e "$EMAIL" '{email: $e, create_user: true}')")
+          if [ "$status" -ge 300 ]; then echo "::error::Supabase refused to send the code ($status): $(cat response.json)"; exit 1; fi
+          echo "Test code sent"
