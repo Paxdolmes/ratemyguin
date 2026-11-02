@@ -39,6 +39,24 @@ export type Pub = {
   pubScore?: number | null // atmosphere and service, out of 100
   priceUpdatedAt?: string | null
   underReview?: boolean
+  features?: FeatureKey[]
+  openedOn?: string | null
+  addedAt?: string | null
+}
+
+export const FEATURES = {
+  beer_garden: "Beer garden",
+  food: "Food",
+  sport: "Live sport",
+  quiet: "Quiet corners",
+  step_free: "Step-free",
+  guinness_zero: "Guinness 0.0",
+} as const
+export type FeatureKey = keyof typeof FEATURES
+
+/** Opened in the last 18 months (from OpenStreetMap), so it still needs its first reviews. */
+export function isNewOpening(pub: Pick<Pub, "openedOn">) {
+  return !!pub.openedOn && Date.now() - new Date(pub.openedOn).getTime() < 548 * 86400000
 }
 
 export type Band = "exceptional" | "gold" | "recommended" | "unbanded"
@@ -112,15 +130,38 @@ export function formatDistance(km: number) {
   return `${km.toFixed(1)} km`
 }
 
-export type LocationKey = "near" | "fulham" | "london" | "uk" | "dublin"
+type Place = { label: string; center: [number, number]; zoom: number; radiusKm?: number; city?: string; country?: string; hood?: boolean }
 
-export const LOCATIONS: Record<LocationKey, { label: string; center: [number, number]; zoom: number; radiusKm?: number; city?: string; country?: string }> = {
+const hood = (label: string, lat: number, lng: number, radiusKm = 1.3): Place => ({ label, center: [lat, lng], zoom: 15, radiusKm, hood: true })
+
+export const LOCATIONS = {
   near: { label: "Near me", center: [51.4802, -0.1953], zoom: 14, radiusKm: 2.5 },
-  fulham: { label: "Fulham", center: [51.477, -0.2], zoom: 14, radiusKm: 2.2 },
   london: { label: "London", center: [51.508, -0.14], zoom: 11, city: "London" },
   uk: { label: "UK", center: [53.4, -2.4], zoom: 6, country: "United Kingdom" },
   dublin: { label: "Dublin", center: [53.344, -6.272], zoom: 13, city: "Dublin" },
-}
+  // Neighbourhood leaderboards
+  soho: hood("Soho", 51.5136, -0.1365, 0.9),
+  covent_garden: hood("Covent Garden", 51.5117, -0.1240, 0.8),
+  camden: hood("Camden", 51.5390, -0.1426),
+  islington: hood("Islington", 51.5362, -0.1033),
+  shoreditch: hood("Shoreditch", 51.5262, -0.0794),
+  city: hood("The City", 51.5134, -0.0890, 1.1),
+  borough: hood("Borough", 51.5032, -0.0917, 1),
+  marylebone: hood("Marylebone", 51.5203, -0.1540),
+  kensington: hood("Kensington", 51.4991, -0.1938),
+  notting_hill: hood("Notting Hill", 51.5115, -0.2030),
+  fulham: hood("Fulham", 51.4770, -0.2000, 1.8),
+  hammersmith: hood("Hammersmith", 51.4927, -0.2240),
+  chelsea: hood("Chelsea", 51.4875, -0.1687),
+  clapham: hood("Clapham", 51.4618, -0.1384, 1.5),
+  brixton: hood("Brixton", 51.4613, -0.1156),
+  greenwich: hood("Greenwich", 51.4810, -0.0090, 1.5),
+  hackney: hood("Hackney", 51.5450, -0.0553, 1.5),
+  richmond: hood("Richmond", 51.4613, -0.3037, 1.5),
+} satisfies Record<string, Place>
+
+export type LocationKey = keyof typeof LOCATIONS
+export const PLACES: Record<LocationKey, Place> = LOCATIONS
 
 export const FULHAM_BROADWAY = { lat: 51.4802, lng: -0.1953 }
 

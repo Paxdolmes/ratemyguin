@@ -26,5 +26,8 @@ jobs:
         with:
           node-version: 22
       - run: node supabase/seed/osm-pubs.mjs "${{ inputs.area }}"
+      - name: Load London stations
+        if: inputs.area == 'london'
+        run: node supabase/seed/osm-stations.mjs
       - name: Find logos and photos for the pubs
         run: node supabase/seed/pub-logos.mjs 4000

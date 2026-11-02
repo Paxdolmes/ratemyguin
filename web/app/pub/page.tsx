@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { Suspense, useEffect, useState } from "react"
-import { BadgeCheck, ChevronLeft, MapPin, Plus, ShieldAlert } from "lucide-react"
+import { BadgeCheck, ChevronLeft, Footprints, MapPin, Plus, ShieldAlert, TrainFront } from "lucide-react"
 import { AwardChip, BandChip } from "@/components/band-chip"
 import { BreakdownBars } from "@/components/pub/breakdown-bars"
 import { PubBadge } from "@/components/pub/pub-badge"
@@ -11,8 +11,8 @@ import { RatingCard } from "@/components/pub/rating-card"
 import { ScoreDial } from "@/components/pub/score-dial"
 import { Sparkline } from "@/components/pub/sparkline"
 import { Trend } from "@/components/trend"
-import { cityMedianPrice, cityPosition, loadPub, loadRatings } from "@/lib/live"
-import { MIN_RATINGS, bandFor, currencyFor, excellenceIndex, formatPrice, isRated, monthlyTrend, timeAgo, TAGS, type PintRating, type Pub, type TagKey } from "@/lib/pubs"
+import { cityMedianPrice, cityPosition, loadPub, loadRatings, nearestStations, type Station } from "@/lib/live"
+import { MIN_RATINGS, bandFor, currencyFor, excellenceIndex, formatPrice, isRated, monthlyTrend, timeAgo, TAGS, FEATURES, isNewOpening, type PintRating, type Pub, type TagKey } from "@/lib/pubs"
 
 export default function PubPageRoute() {
   return (
@@ -37,6 +37,7 @@ function PubPage() {
   const [ratings, setRatings] = useState<PintRating[]>([])
   const [position, setPosition] = useState(0)
   const [median, setMedian] = useState<number | null>(null)
+  const [stations, setStations] = useState<Station[]>([])
 
   useEffect(() => {
     let live = true
@@ -46,8 +47,14 @@ function PubPage() {
         setPub(p)
         if (!p) return
         document.title = `${p.name} · ratemyGuin`
-        const [r, pos, med] = await Promise.all([loadRatings(p.slug), cityPosition(p), cityMedianPrice(p.city)])
+        const [r, pos, med, st] = await Promise.all([
+          loadRatings(p.slug),
+          cityPosition(p),
+          cityMedianPrice(p.city),
+          nearestStations(p.lat, p.lng).catch(() => []),
+        ])
         if (!live) return
+        setStations(st)
         setRatings(r)
         setPosition(pos)
         setMedian(med)
@@ -113,6 +120,34 @@ function PubPage() {
                   {pub.area !== pub.city ? `, ${pub.area}` : ""}
                 </span>
               </p>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${pub.lat},${pub.lng}&travelmode=walking`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 font-semibold text-pub hover:underline"
+                >
+                  <Footprints className="size-4" aria-hidden="true" />
+                  Walking directions
+                </a>
+                {stations.map((st) => (
+                  <span key={st.name} className="inline-flex items-center gap-1.5 text-muted-foreground">
+                    <TrainFront className="size-4" aria-hidden="true" />
+                    {st.name}
+                    {st.kind !== "rail" && st.kind !== "tube" ? ` (${st.kind === "dlr" ? "DLR" : st.kind[0].toUpperCase() + st.kind.slice(1)})` : ""} · {st.walk_minutes} min walk
+                  </span>
+                ))}
+              </div>
+              {((pub.features?.length ?? 0) > 0 || isNewOpening(pub)) && (
+                <ul className="flex flex-wrap gap-1.5" aria-label="Features">
+                  {isNewOpening(pub) && <li className="rounded-full bg-pub px-2.5 py-0.5 text-xs font-semibold text-paper">New opening</li>}
+                  {pub.features?.map((f) => (
+                    <li key={f} className="rounded-full border border-stout/15 bg-paper px-2.5 py-0.5 text-xs font-medium">
+                      {FEATURES[f]}
+                    </li>
+                  ))}
+                </ul>
+              )}
               {(pub.website || pub.brand) && (
                 <p className="flex flex-wrap items-center gap-3 text-sm">
                   {pub.brand && <span className="rounded-full bg-paper px-2.5 py-0.5 font-medium">{pub.brand}</span>}

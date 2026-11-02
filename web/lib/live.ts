@@ -5,7 +5,7 @@
 
 import { createClient, type Session } from "@supabase/supabase-js"
 import { useEffect, useState } from "react"
-import { LOCATIONS, distanceKm, type LocationKey, type PintRating, type Pub, type TagKey } from "./pubs"
+import { LOCATIONS, PLACES, distanceKm, type LocationKey, type PintRating, type Pub, type TagKey, type FeatureKey } from "./pubs"
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://yhttayboxljswczexspg.supabase.co"
 const KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "sb_publishable_8aeFY-i4xdQPbQ7kA_BRjA_WfoJR18a"
@@ -39,10 +39,13 @@ type DirectoryRow = {
   pub_score: number | null
   price_updated_at: string | null
   under_review: boolean | null
+  features: FeatureKey[] | null
+  opened_on: string | null
+  added_at: string | null
 }
 
 const COLS =
-  "id,name,address,neighbourhood,city,country,atmosphere,lat,lng,rating_count,verified_share,pour,taste_temperature,consistency,atmosphere_service,value,median_price_pence,excellence_index,website,brand,logo_url,image_url,pint_score,pub_score,price_updated_at,under_review"
+  "id,name,address,neighbourhood,city,country,atmosphere,lat,lng,rating_count,verified_share,pour,taste_temperature,consistency,atmosphere_service,value,median_price_pence,excellence_index,website,brand,logo_url,image_url,pint_score,pub_score,price_updated_at,under_review,features,opened_on,added_at"
 
 function toPub(r: DirectoryRow, origin?: { lat: number; lng: number }): Pub {
   const ten = (v: number | null) => (v == null ? 0 : Math.round(Number(v) * 10))
@@ -78,11 +81,14 @@ function toPub(r: DirectoryRow, origin?: { lat: number; lng: number }): Pub {
     pubScore: r.pub_score,
     priceUpdatedAt: r.price_updated_at,
     underReview: !!r.under_review,
+    features: r.features ?? [],
+    openedOn: r.opened_on,
+    addedAt: r.added_at,
   }
 }
 
 async function loadArea(key: LocationKey, origin: { lat: number; lng: number }): Promise<Pub[]> {
-  const loc = LOCATIONS[key]
+  const loc = PLACES[key]
   if (loc.radiusKm) {
     const centre = key === "near" ? origin : { lat: loc.center[0], lng: loc.center[1] }
     const { data, error } = await supabase.rpc("pub_directory_near", { p_lat: centre.lat, p_lng: centre.lng, p_radius_m: Math.round(loc.radiusKm * 1000) })
@@ -237,6 +243,7 @@ export type NewRating = {
   note?: string
   fix?: { lat: number; lng: number; accuracy: number } | null
   tags?: TagKey[]
+  features?: FeatureKey[]
   visitedOn?: string
   photo?: File | null
 }
@@ -267,6 +274,7 @@ export async function submitRating(userId: string, r: NewRating) {
   const { error } = await supabase.from("ratings").insert({
     photo_path: photoPath,
     tags: r.tags ?? [],
+    features: r.features ?? [],
     visited_on: r.visitedOn ?? null,
     pub_id: r.pubId,
     user_id: userId,
@@ -306,4 +314,11 @@ export type ReportReason = "fake" | "not_there" | "offensive" | "staff" | "other
 export async function reportRating(ratingId: string, reason: ReportReason) {
   const { error } = await supabase.from("rating_reports").insert({ rating_id: ratingId, reason })
   if (error && error.code !== "23505") throw error
+}
+
+export type Station = { name: string; kind: "tube" | "overground" | "elizabeth" | "dlr" | "rail" | "tram"; metres: number; walk_minutes: number }
+
+export async function nearestStations(lat: number, lng: number): Promise<Station[]> {
+  const { data } = await supabase.rpc("nearest_stations", { p_lat: lat, p_lng: lng })
+  return (data ?? []) as Station[]
 }

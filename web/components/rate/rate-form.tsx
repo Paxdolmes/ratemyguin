@@ -7,7 +7,7 @@ import { RatingSlider } from "./rating-slider"
 import { VerifyCard, type VerifyState } from "./verify-card"
 import { PubBadge } from "@/components/pub/pub-badge"
 import { loadPub, searchPubs, submitRating, useSession } from "@/lib/live"
-import { TAGS, currencyFor, distanceKm, pubHref, type Pub, type TagKey } from "@/lib/pubs"
+import { FEATURES, TAGS, currencyFor, distanceKm, pubHref, type FeatureKey, type Pub, type TagKey } from "@/lib/pubs"
 
 const PARTS = [
   { key: "pour", label: "Pour", hint: "Two-part pour, left to settle" },
@@ -85,6 +85,7 @@ export function RateForm({ initialSlug }: { initialSlug?: string }) {
   const [price, setPrice] = useState("")
   const [note, setNote] = useState("")
   const [tags, setTags] = useState<TagKey[]>([])
+  const [features, setFeatures] = useState<FeatureKey[]>([])
   const today = new Date().toISOString().slice(0, 10)
   const [visitedOn, setVisitedOn] = useState(today)
   const [photo, setPhoto] = useState<File | null>(null)
@@ -147,6 +148,7 @@ export function RateForm({ initialSlug }: { initialSlug?: string }) {
         note,
         fix,
         tags,
+        features,
         visitedOn,
         photo,
       })
@@ -273,6 +275,31 @@ export function RateForm({ initialSlug }: { initialSlug?: string }) {
                 })}
             </div>
           ))}
+        </fieldset>
+
+        <fieldset className="flex flex-col gap-3">
+          <legend className="mb-2 font-display text-2xl font-bold">Does the pub have…</legend>
+          <p className="-mt-1 text-sm text-muted-foreground">Optional. Helps others filter. Never changes the score.</p>
+          <div className="flex flex-wrap gap-2">
+            {(Object.keys(FEATURES) as FeatureKey[]).map((f) => {
+              const on = features.includes(f)
+              return (
+                <button
+                  key={f}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => setFeatures((xs) => (on ? xs.filter((x) => x !== f) : [...xs, f]))}
+                  className={
+                    on
+                      ? "rounded-full border border-stout bg-stout px-3 py-1.5 text-sm font-medium text-cream"
+                      : "rounded-full border border-border bg-paper px-3 py-1.5 text-sm font-medium hover:bg-cream"
+                  }
+                >
+                  {FEATURES[f]}
+                </button>
+              )
+            })}
+          </div>
         </fieldset>
       </div>
 

@@ -5,18 +5,19 @@ import { useMemo, useState } from "react"
 import { ChevronRight, Map as MapIcon, X } from "lucide-react"
 import { MapLoader } from "@/components/map/map-loader"
 import { NotYetRatedChip } from "@/components/band-chip"
-import { FilterChips, type SortKey } from "./filter-chips"
+import { FilterChips, type Filters, type SortKey } from "./filter-chips"
 import { LeagueTable, type LeagueRow } from "./league-table"
 import { LocationPicker } from "./location-picker"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { PubBadge } from "@/components/pub/pub-badge"
 import { usePubs } from "@/lib/live"
-import { FULHAM_BROADWAY, LOCATIONS, distanceKm, excellenceIndex, formatDistance, isRated, pubHref, type LocationKey } from "@/lib/pubs"
+import { FULHAM_BROADWAY, LOCATIONS, PLACES, distanceKm, excellenceIndex, formatDistance, isNewOpening, isRated, pubHref, type LocationKey } from "@/lib/pubs"
 
 export function RankingsView() {
   const [location, setLocation] = useState<LocationKey>("london")
   const [sort, setSort] = useState<SortKey>("best")
   const [ninetyPlus, setNinetyPlus] = useState(false)
+  const [filters, setFilters] = useState<Filters>({ features: [], newOnly: false })
   const [activeSlug, setActiveSlug] = useState<string | null>(null)
   const [showMap, setShowMap] = useState(false)
   const [origin, setOrigin] = useState(FULHAM_BROADWAY)
@@ -49,11 +50,22 @@ export function RankingsView() {
 
   const sortOrigin = useMemo(() => {
     if (location === "near") return origin
-    const c = LOCATIONS[location].center
+    const c = PLACES[location].center
     return { lat: c[0], lng: c[1] }
   }, [location, origin])
 
-  const { pubs: inArea, loading, error } = usePubs(location, origin)
+  const { pubs: loaded, loading, error } = usePubs(location, origin)
+  const inArea = useMemo(
+    () =>
+      loaded.filter(
+        (p) => filters.features.every((f) => p.features?.includes(f)) && (!filters.newOnly || isNewOpening(p)),
+      ),
+    [loaded, filters],
+  )
+  const cityMedian = useMemo(() => {
+    const xs = loaded.map((p) => p.price).filter((x): x is number => x != null).sort((a, b) => a - b)
+    return xs.length ? xs[Math.floor(xs.length / 2)] : null
+  }, [loaded])
   const [unratedShown, setUnratedShown] = useState(25)
 
   const rows: LeagueRow[] = useMemo(() => {
@@ -66,21 +78,25 @@ export function RankingsView() {
     const filtered = ninetyPlus ? rated.filter((r) => r.score >= 90) : rated
     const sorted = [...filtered]
     if (sort === "nearest") sorted.sort((a, b) => a.distance - b.distance)
+    // Best near me: quality first, then a short walk, then a fair price.
+    const balance = (r: (typeof sorted)[number]) =>
+      r.score - 6 * r.distance - (r.pub.price != null && cityMedian != null ? 3 * (r.pub.price - cityMedian) : 0)
+    if (sort === "balanced") sorted.sort((a, b) => balance(b) - balance(a))
     if (sort === "cheapest") sorted.sort((a, b) => (a.pub.price ?? 99) - (b.pub.price ?? 99))
     if (sort === "atmosphere") sorted.sort((a, b) => b.pub.components.atmosphere - a.pub.components.atmosphere)
     return sorted
-  }, [inArea, ninetyPlus, sort, sortOrigin])
+  }, [inArea, ninetyPlus, sort, sortOrigin, cityMedian])
 
   const unratedNamed = useMemo(
-    () => inArea.filter((p) => !isRated(p)).sort((a, b) => b.ratingsLastYear - a.ratingsLastYear || distanceKm(sortOrigin, a) - distanceKm(sortOrigin, b)),
+    () => inArea.filter((p) => !isRated(p)).sort((a, b) => b.ratingsLastYear - a.ratingsLastYear || Number(isNewOpening(b)) - Number(isNewOpening(a)) || distanceKm(sortOrigin, a) - distanceKm(sortOrigin, b)),
     [inArea, sortOrigin],
   )
   const ratedCount = inArea.length - unratedNamed.length
   const allPoints = useMemo<[number, number, string, string][]>(() => unratedNamed.map((p) => [p.lat, p.lng, p.slug, p.name]), [unratedNamed])
-  const showDistance = location === "near" || sort === "nearest"
+  const showDistance = location === "near" || sort === "nearest" || sort === "balanced"
 
   const mapCenter = useMemo<[number, number]>(
-    () => (location === "near" ? [origin.lat, origin.lng] : LOCATIONS[location].center),
+    () => (location === "near" ? [origin.lat, origin.lng] : PLACES[location].center),
     [location, origin],
   )
 
@@ -89,7 +105,7 @@ export function RankingsView() {
       pubs={inArea}
       unrated={allPoints}
       center={mapCenter}
-      zoom={LOCATIONS[location].zoom}
+      zoom={PLACES[location].zoom}
       activeSlug={activeSlug}
       onSelect={setActiveSlug}
       userLocation={location === "near" ? origin : null}
@@ -108,7 +124,7 @@ export function RankingsView() {
             id="rankings-heading"
             className="font-display text-4xl font-semibold leading-[0.95] text-balance md:text-6xl"
           >
-            The best pint near you
+            {PLACES[location].hood ? `The best pint in ${PLACES[location].label}` : location === "london" ? "The best pint in London" : "The best pint near you"}
           </h1>
           <LocationPicker value={location} onChange={handleLocation} locating={locating} />
           {locationNote && (
@@ -118,8 +134,15 @@ export function RankingsView() {
           )}
         </div>
 
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <FilterChips sort={sort} onSortChange={setSort} ninetyPlus={ninetyPlus} onNinetyPlusChange={setNinetyPlus} />
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+          <FilterChips
+            sort={sort}
+            onSortChange={setSort}
+            ninetyPlus={ninetyPlus}
+            onNinetyPlusChange={setNinetyPlus}
+            filters={filters}
+            onFiltersChange={setFilters}
+          />
           <p className="shrink-0 text-sm text-muted-foreground">
             <span className="font-semibold text-foreground tabular-nums">{rows.length}</span> of {ratedCount} rated
           </p>
@@ -201,7 +224,11 @@ export function RankingsView() {
                       {showDistance && pub.distanceKm != null ? ` · ${formatDistance(distanceKm(sortOrigin, pub))}` : ""} · {pub.ratingsLastYear} of 3 ratings
                     </span>
                   </div>
-                  <NotYetRatedChip className="hidden sm:inline-flex" />
+                  {isNewOpening(pub) ? (
+                    <span className="hidden rounded-full bg-pub px-2.5 py-0.5 text-xs font-semibold text-paper sm:inline-flex">New opening</span>
+                  ) : (
+                    <NotYetRatedChip className="hidden sm:inline-flex" />
+                  )}
                   <Link
                     href={`/rate/?pub=${pub.slug}`}
                     className="inline-flex h-9 items-center gap-1 rounded-full bg-stout px-3.5 text-sm font-semibold text-cream hover:bg-pub"
