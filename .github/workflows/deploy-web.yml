@@ -31,3 +31,31 @@ jobs:
       - run: npx expo export --platform web
       - name: Publish
         run: npx --yes eas-cli@latest deploy --prod --non-interactive --alias ratemyguin 2>&1 | tee deploy.log || npx --yes eas-cli@latest deploy --prod --non-interactive 2>&1 | tee deploy.log
+      - name: Screenshot the live site
+        working-directory: .
+        run: |
+          npm i --no-save --prefix /tmp/shots playwright@1 >/dev/null 2>&1
+          npx --prefix /tmp/shots playwright install --with-deps chromium >/dev/null 2>&1
+          cat > /tmp/shots/shot.cjs <<'JS'
+          const { chromium } = require('/tmp/shots/node_modules/playwright');
+          (async () => {
+            const b = await chromium.launch();
+            const sizes = { phone: { width: 390, height: 844 }, desktop: { width: 1440, height: 900 } };
+            for (const [name, viewport] of Object.entries(sizes)) {
+              const ctx = await b.newContext({ viewport, deviceScaleFactor: 1, geolocation: { latitude: 51.4787, longitude: -0.1957 }, permissions: ['geolocation'] });
+              const p = await ctx.newPage();
+              for (const path of ['/', '/leaderboards', '/passport']) {
+                await p.goto('https://ratemyguin.expo.app' + path, { waitUntil: 'networkidle' });
+                await p.waitForTimeout(4000);
+                await p.screenshot({ path: `shots/${name}${path.replace(/\//g, '_')}.png`, fullPage: true });
+              }
+              await ctx.close();
+            }
+            await b.close();
+          })();
+          JS
+          mkdir -p shots && node /tmp/shots/shot.cjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: screenshots
+          path: shots/
