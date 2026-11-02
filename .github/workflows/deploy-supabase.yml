@@ -79,6 +79,10 @@ jobs:
             echo "::warning::Sign-in email not updated ($status): $(cat response.json)"
             exit 1
           fi
+      - name: Show the saved email settings
+        run: |
+          curl -sS "https://api.supabase.com/v1/projects/$PROJECT_REF/config/auth" -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            | jq '{smtp_host, smtp_admin_email, external_email_enabled, mailer_otp_length, mailer_otp_exp, mailer_subjects_magic_link, magic_link_template_chars: (.mailer_templates_magic_link_content|length), magic_link_has_token: (.mailer_templates_magic_link_content|tostring|contains(".Token")), mailer_subjects_confirmation, confirmation_has_token: (.mailer_templates_confirmation_content|tostring|contains(".Token"))}'
       - name: Send a test sign-in code
         if: inputs.test_email != ''
         env:
