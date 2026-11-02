@@ -10,6 +10,7 @@ const VARIANTS = {
     scheme: 'ratemyguin',
     bundleId: 'com.ratemyguin.app',
     tile: '#14100C',
+    easProjectId: 'd2021972-3a1d-41c6-83d0-081081259f40',
   },
   pubs: {
     name: 'RateMyGuin for Pubs',
@@ -17,6 +18,7 @@ const VARIANTS = {
     scheme: 'ratemyguinpubs',
     bundleId: 'com.ratemyguin.pubs',
     tile: '#F1E6CF',
+    easProjectId: '', // created on the first pubs build
   },
 } as const;
 
@@ -34,6 +36,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     bundleIdentifier: v.bundleId,
     supportsTablet: false,
+    config: { usesNonExemptEncryption: false },
     infoPlist: {
       NSLocationWhenInUseUsageDescription: 'RateMyGuin checks you are in the pub so your rating counts as a verified visit.',
     },
@@ -54,5 +57,5 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ['expo-image-picker', { photosPermission: 'Add a photo of your pint to your rating.', cameraPermission: 'Take a photo of your pint.' }],
   ],
   experiments: { typedRoutes: false },
-  extra: { appVariant: variant },
+  extra: { appVariant: variant, ...(v.easProjectId ? { eas: { projectId: v.easProjectId } } : {}) },
 });

@@ -1,7 +1,9 @@
 name: Build test app
 
 # Builds an installable test app on Expo (EAS). Needs the EXPO_TOKEN repository secret.
-# Android gives an .apk download link; iPhone needs an Apple Developer account.
+# Android: an .apk download link. iPhone: a store build sent to TestFlight, which needs
+# App Store Connect API key secrets ASC_API_KEY_P8, ASC_KEY_ID, ASC_ISSUER_ID, APPLE_TEAM_ID
+# (and ASC_APP_ID once the app exists in App Store Connect, to upload to TestFlight).
 
 on:
   workflow_dispatch:
@@ -15,7 +17,7 @@ on:
         description: Phone type
         type: choice
         options: [android, ios]
-        default: android
+        default: ios
   push:
     branches: [expo-test-build] # temporary, so the setup can be tested before merging
 
@@ -28,7 +30,13 @@ jobs:
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       APP_VARIANT: ${{ inputs.app || 'drinkers' }}
-      PLATFORM: ${{ inputs.platform || 'android' }}
+      PLATFORM: ${{ inputs.platform || 'ios' }}
+      ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
+      EXPO_ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      EXPO_ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      EXPO_APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      EXPO_APPLE_TEAM_TYPE: ${{ vars.APPLE_TEAM_TYPE || 'INDIVIDUAL' }}
+      ASC_APP_ID: ${{ secrets.ASC_APP_ID }}
     steps:
       - name: Check the Expo token is set
         working-directory: .
@@ -54,11 +62,23 @@ jobs:
             echo "::error::Expo project for $APP_VARIANT isn't linked in app.config.ts yet. Copy the project ID printed above into it."
             exit 1
           fi
+      - name: Set up Apple signing
+        if: env.PLATFORM == 'ios'
+        run: |
+          for v in ASC_API_KEY_P8 EXPO_ASC_KEY_ID EXPO_ASC_ISSUER_ID EXPO_APPLE_TEAM_ID; do
+            if [ -z "${!v}" ]; then echo "::error::Missing secret for $v (see the top of this workflow)."; exit 1; fi
+          done
+          printf '%s\n' "$ASC_API_KEY_P8" > "$RUNNER_TEMP/asc.p8"
+          echo "EXPO_ASC_API_KEY_PATH=$RUNNER_TEMP/asc.p8" >> "$GITHUB_ENV"
       - name: Build
         run: |
-          profile=preview
-          [ "$APP_VARIANT" = pubs ] && profile=preview-pubs
-          npx --yes eas-cli@latest build --platform "$PLATFORM" --profile "$profile" --non-interactive --no-wait --json > build.json
-          cat build.json
-          url=$(jq -r '.[0].id as $id | "https://expo.dev/accounts/\(.[0].project.ownerAccount.name // "")/projects/\(.[0].project.slug // "")/builds/\($id)"' build.json 2>/dev/null || true)
-          echo "Build started: $url"
+          if [ "$PLATFORM" = ios ]; then profile=production; else profile=preview; fi
+          [ "$APP_VARIANT" = pubs ] && profile="$profile-pubs"
+          export profile
+          submit=""
+          if [ "$PLATFORM" = ios ] && [ -n "$ASC_APP_ID" ]; then
+            jq --arg id "$ASC_APP_ID" --arg key "$EXPO_ASC_API_KEY_PATH" --arg kid "$EXPO_ASC_KEY_ID" --arg iss "$EXPO_ASC_ISSUER_ID" \
+              '.submit = {($ENV.profile): {ios: {ascAppId: $id, ascApiKeyPath: $key, ascApiKeyId: $kid, ascApiKeyIssuerId: $iss}}}' eas.json > eas.tmp && mv eas.tmp eas.json
+            submit="--auto-submit"
+          fi
+          npx --yes eas-cli@latest build --platform "$PLATFORM" --profile "$profile" --non-interactive --no-wait $submit
