@@ -1,0 +1,10 @@
+{
+  "cli": { "version": ">= 16.0.0", "appVersionSource": "remote" },
+  "build": {
+    "development": { "developmentClient": true, "distribution": "internal" },
+    "preview": { "distribution": "internal", "android": { "buildType": "apk" } },
+    "preview-pubs": { "extends": "preview", "env": { "APP_VARIANT": "pubs" } },
+    "production": { "autoIncrement": true },
+    "production-pubs": { "extends": "production", "env": { "APP_VARIANT": "pubs" } }
+  }
+}
