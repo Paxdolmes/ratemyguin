@@ -4,7 +4,7 @@ The independent, community-powered platform for discovering, rating and ranking 
 
 RateMyGuin is independent and not affiliated with Guinness or Diageo. Its awards are independent recognition, not official Guinness awards.
 
-Brand board: [v0 chat](https://v0.app/chat/mo1e03Gzeju) · logo, award badges and tokens in [`docs/brand/`](docs/brand)
+Plan: [MVP plan](https://claude.ai/artifact/74aLqdiQFh5jXn6crNKwLd) · Brand board: [v0 chat](https://v0.app/chat/mo1e03Gzeju) · logo, award badges and tokens in [`docs/brand/`](docs/brand)
 
 ## What's here
 
