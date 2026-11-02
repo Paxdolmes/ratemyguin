@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation"
 import { Suspense, useEffect, useState } from "react"
 import { BadgeCheck, ChevronLeft, Footprints, MapPin, Plus, ShieldAlert, TrainFront } from "lucide-react"
 import { AwardChip, BandChip } from "@/components/band-chip"
+import { PubMiniMap } from "@/components/pub/pub-mini-map"
 import { BreakdownBars } from "@/components/pub/breakdown-bars"
 import { PubBadge } from "@/components/pub/pub-badge"
 import { RatingCard } from "@/components/pub/rating-card"
@@ -161,6 +162,8 @@ function PubPage() {
                 </p>
               )}
             </div>
+
+            <PubMiniMap pub={pub} rated={rated} />
 
             <dl className="grid grid-cols-3 gap-4 border-t border-stout/15 pt-6">
               <div className="flex flex-col gap-1">
