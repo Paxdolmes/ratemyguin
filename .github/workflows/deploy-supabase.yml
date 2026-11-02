@@ -2,6 +2,9 @@ name: Deploy Supabase
 
 # Applies new database migrations to the live Supabase project whenever main changes.
 # Needs two repository secrets: SUPABASE_ACCESS_TOKEN and SUPABASE_DB_PASSWORD.
+# Optional: RESEND_API_KEY secret makes Supabase send sign-in codes through Resend.
+# EMAIL_FROM repository variable sets the sender (default onboarding@resend.dev,
+# which only delivers to the Resend account owner until a domain is verified).
 
 on:
   push:
@@ -18,6 +21,8 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
       PROJECT_REF: yhttayboxljswczexspg
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      EMAIL_FROM: ${{ vars.EMAIL_FROM || 'onboarding@resend.dev' }}
     steps:
       - uses: actions/checkout@v4
       - name: Check the secrets are set
@@ -31,6 +36,27 @@ jobs:
           version: 2.120.0
       - run: supabase link --project-ref "$PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
       - run: supabase db push --password "$SUPABASE_DB_PASSWORD"
+      - name: Send sign-in emails through Resend
+        if: env.RESEND_API_KEY != ''
+        run: |
+          body=$(jq -n --arg pass "$RESEND_API_KEY" --arg from "$EMAIL_FROM" '{
+            external_email_enabled: true,
+            smtp_host: "smtp.resend.com",
+            smtp_port: "465",
+            smtp_user: "resend",
+            smtp_pass: $pass,
+            smtp_admin_email: $from,
+            smtp_sender_name: "RateMyGuin",
+            rate_limit_email_sent: 60
+          }')
+          status=$(curl -sS -o response.json -w '%{http_code}' -X PATCH "https://api.supabase.com/v1/projects/$PROJECT_REF/config/auth" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" \
+            -d "$body")
+          if [ "$status" -ge 300 ]; then
+            echo "::error::Resend SMTP not applied ($status): $(cat response.json)"
+            exit 1
+          fi
+          echo "Supabase now sends email from $EMAIL_FROM via Resend"
       - name: Apply the sign-in code email
         # Supabase only allows custom emails once a custom SMTP sender is set up,
         # so don't fail the database deploy over it.
