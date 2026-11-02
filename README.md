@@ -46,11 +46,16 @@ npm run start:pubs   # RateMyGuin for Pubs
 
 Without Supabase settings the apps run in **demo mode** with eight made-up London pubs and about 240 sample ratings. The pub names are fictional, not real pubs.
 
-## Set up the backend
+## The live backend
 
-1. Create a project at [supabase.com](https://supabase.com) (London region).
-2. From the repo root: `npx supabase link --project-ref <ref>`, then `npx supabase db push`.
-3. Copy `mobile/.env.example` to `mobile/.env.local` and fill in the URL and anon key.
+The Supabase project is `yhttayboxljswczexspg` (London). The apps use it whenever `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY` are set: test and store builds get them from `mobile/eas.json`, and for local runs copy `mobile/.env.example` to `mobile/.env.local`. Without them the apps run in demo mode. Only the publishable key goes in the app, never the secret key.
+
+Two GitHub Actions workflows look after the database. Both need the repository secrets `SUPABASE_ACCESS_TOKEN` and `SUPABASE_DB_PASSWORD`.
+
+- **Deploy Supabase** runs on every merge that touches `supabase/`. It applies new migrations and sets the sign-in code email.
+- **Load pubs from OpenStreetMap** is run by hand from the Actions tab. It adds every named pub in London, Dublin or Manchester and is safe to run again. Pub data © OpenStreetMap contributors.
+
+Sign-in is by email code. Supabase's built-in email sender only allows a few emails an hour, so add your own SMTP provider (Auth → SMTP settings) before inviting testers.
 
 ## Checks
 
@@ -73,4 +78,4 @@ CI runs both on every pull request.
 
 ## Not built yet
 
-Accounts and the live Supabase connection, a real map, photo upload to storage, receipt checking, follows and comments in the app, pub claiming, award certificates as PDFs, QR codes, embeddable rankings, challenges and seasonal competitions, and app icons.
+A real map, photo upload to storage (photos stay on the phone for now), receipt checking, follows and comments in the app, pub claiming, award certificates as PDFs, QR codes, embeddable rankings, challenges and seasonal competitions, and app icons.

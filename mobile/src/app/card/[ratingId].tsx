@@ -5,7 +5,6 @@ import Svg, { Path } from 'react-native-svg';
 import { Body, Button } from '@/components/ui';
 import { Fonts } from '@/constants/theme';
 import { SUB_SCORE_LABELS, SUB_SCORES } from '@/domain/scores';
-import { ME, PUBS } from '@/lib/demo';
 import { useStore } from '@/lib/store';
 
 const STOUT = '#17110D';
@@ -16,10 +15,11 @@ const GREEN = '#5DBE96';
 // TODO: render to an image (react-native-view-shot) for Instagram stories.
 export default function PintCard() {
   const { ratingId } = useLocalSearchParams<{ ratingId: string }>();
-  const { ratings } = useStore();
+  const { ratings, pub: findPub } = useStore();
   const r = ratings.find((x) => x.id === ratingId);
   if (!r) return <Body>Rating not found.</Body>;
-  const pub = PUBS.find((p) => p.id === r.pubId)!;
+  const pub = findPub(r.pubId);
+  if (!pub) return <Body>Pub not found.</Body>;
 
   const share = () =>
     Share.share({ message: `${r.overall.toFixed(1)}/10 for the Guinness at ${pub.name}. Rated on RateMyGuin.` }).catch(() => {});
@@ -51,7 +51,7 @@ export default function PintCard() {
             ))}
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-            <Text style={{ fontFamily: Fonts.bodySemi, fontSize: 14, color: CREAM, opacity: 0.8 }}>{r.anonymous ? 'Anonymous' : `@${ME.handle}`}{r.verification !== 'none' ? ' · Verified visit' : ''}</Text>
+            <Text style={{ fontFamily: Fonts.bodySemi, fontSize: 14, color: CREAM, opacity: 0.8 }}>{r.anonymous ? 'Anonymous' : `@${r.authorHandle ?? 'you'}`}{r.verification !== 'none' ? ' · Verified visit' : ''}</Text>
             <Text style={{ fontFamily: Fonts.display, fontSize: 18, color: CREAM }}>
               ratemy<Text style={{ color: GREEN }}>guin</Text>
             </Text>

@@ -5,11 +5,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Body, Card, H1, H2, Small } from '@/components/ui';
 import { usePalette } from '@/constants/theme';
 import { badges, uniqueStamps, type Stamp } from '@/domain/passport';
-import { ME, PUBS } from '@/lib/demo';
 import { useStore } from '@/lib/store';
 
 // Pubs you collected before installing the app, so the demo passport isn't empty.
-const SEED: Stamp[] = [
+const DEMO_SEED: Stamp[] = [
   { pubId: 'p5', city: 'London', country: 'United Kingdom', at: '2026-09-12T20:00:00Z', pubIndex: 95, verified: true },
   { pubId: 'p7', city: 'London', country: 'United Kingdom', at: '2026-10-01T20:00:00Z', pubIndex: 88, verified: true },
   { pubId: 'dub1', city: 'Dublin', country: 'Ireland', at: '2026-08-15T20:00:00Z', pubIndex: 96, verified: true },
@@ -18,12 +17,12 @@ const SEED: Stamp[] = [
 export default function Passport() {
   const c = usePalette();
   const insets = useSafeAreaInsets();
-  const { myRatings, pub } = useStore();
+  const { myRatings, pub, me, live } = useStore();
   const stamps = uniqueStamps([
-    ...SEED,
-    ...myRatings.map((r) => {
-      const p = PUBS.find((x) => x.id === r.pubId)!;
-      return { pubId: r.pubId, city: p.city, country: p.country, at: r.ratedAt, pubIndex: pub(r.pubId)?.score.index ?? null, verified: r.verification !== 'none' };
+    ...(live ? [] : DEMO_SEED),
+    ...myRatings.flatMap((r) => {
+      const p = pub(r.pubId);
+      return p ? [{ pubId: r.pubId, city: p.city, country: p.country, at: r.ratedAt, pubIndex: p.score.index, verified: r.verification !== 'none' }] : [];
     }),
   ]);
   const all = badges(stamps);
@@ -31,7 +30,7 @@ export default function Passport() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ paddingTop: insets.top + 12, padding: 20, gap: 16 }}>
-      <Small>@{ME.handle}</Small>
+      <Small>@{me?.handle ?? 'you'}</Small>
       <H1>Your Guin Passport</H1>
       <Card style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
         <Stat n={stamps.length} label="pubs" />
@@ -52,7 +51,7 @@ export default function Passport() {
       <H2>Stamps</H2>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
         {stamps.map((s) => {
-          const p = PUBS.find((x) => x.id === s.pubId);
+          const p = pub(s.pubId);
           return (
             <Pressable key={s.pubId} disabled={!p} onPress={() => p && router.push(`/pub/${p.id}`)} style={{ width: '31%', aspectRatio: 1, borderRadius: 999, borderWidth: 2, borderColor: s.verified ? c.brand : c.border, borderStyle: s.verified ? 'solid' : 'dashed', alignItems: 'center', justifyContent: 'center', padding: 8 }}>
               <Small style={{ textAlign: 'center', color: c.ink, fontFamily: 'Figtree_700Bold' }}>{p?.name.replace(/^The /, '') ?? 'Dublin pub'}</Small>

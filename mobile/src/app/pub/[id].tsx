@@ -1,19 +1,22 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { BadgeCheck, Clock, MapPin } from 'lucide-react-native';
+import { useEffect } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { AwardChip, Body, Button, Card, H1, H2, IndexScore, Initials, ScoreBar, Small } from '@/components/ui';
 import { usePalette } from '@/constants/theme';
 import { AWARD_DISCLAIMER, AWARDS, MIN_RATINGS_FOR_INDEX } from '@/domain/scores';
-import { PEOPLE } from '@/lib/demo';
 import { formatDistance, formatPrice, useStore } from '@/lib/store';
 
 export default function PubProfile() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const c = usePalette();
-  const { pub, ratingsFor } = useStore();
+  const { pub, ratingsFor, loadPub } = useStore();
+  useEffect(() => {
+    void loadPub(id);
+  }, [id, loadPub]);
   const p = pub(id);
-  if (!p) return <Body>Pub not found.</Body>;
+  if (!p) return <Body style={{ padding: 20 }}>Loading…</Body>;
   const s = p.score;
   const ratings = ratingsFor(p.id).slice(0, 12);
 
@@ -63,8 +66,7 @@ export default function PubProfile() {
 
       <H2>Latest pints</H2>
       {ratings.map((r) => {
-        const who = PEOPLE.find((x) => x.id === r.userId);
-        const name = r.anonymous ? 'Anonymous' : (who?.name ?? 'You');
+        const name = r.anonymous ? 'Anonymous' : (r.authorName ?? 'A drinker');
         return (
           <Card key={r.id} style={{ gap: 8 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -82,7 +84,7 @@ export default function PubProfile() {
               </View>
               <H2>{r.overall.toFixed(1)}</H2>
             </View>
-            <Body>{r.note}</Body>
+            {r.note ? <Body>{r.note}</Body> : null}
             <Small>
               Pour {r.pour} · Head {r.head} · Taste {r.taste} · Temp {r.temperature} · Texture {r.texture}
             </Small>

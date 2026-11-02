@@ -1,0 +1,27 @@
+name: Load pubs from OpenStreetMap
+
+# Run by hand from the Actions tab. Fetches every pub in an area from OpenStreetMap
+# and adds or updates them in the live database (matched on their OSM id, so it is
+# safe to run again). Needs the SUPABASE_ACCESS_TOKEN repository secret.
+
+on:
+  workflow_dispatch:
+    inputs:
+      area:
+        description: Area to load
+        type: choice
+        options: [london, dublin, manchester]
+        default: london
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_REF: yhttayboxljswczexspg
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node supabase/seed/osm-pubs.mjs "${{ inputs.area }}"

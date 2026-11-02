@@ -9,6 +9,7 @@ import { Body, Button, Card, Chip, H1, ScorePicker, Small } from '@/components/u
 import { Fonts, usePalette } from '@/constants/theme';
 import { SUB_SCORE_LABELS, SUB_SCORES, validateRating, type SubScore } from '@/domain/scores';
 import { verifyVisit, type Fix } from '@/domain/trust';
+import { useAccountGate } from '@/lib/auth';
 import { useStore } from '@/lib/store';
 
 type Scores = Record<SubScore | 'overall' | 'atmosphere', number>;
@@ -16,7 +17,9 @@ type Scores = Record<SubScore | 'overall' | 'atmosphere', number>;
 export default function RatePint() {
   const { pubId } = useLocalSearchParams<{ pubId: string }>();
   const c = usePalette();
-  const { pub, addRating } = useStore();
+  const { pub, addRating, loadPub } = useStore();
+  const gate = useAccountGate();
+  const [busy, setBusy] = useState(false);
   const p = pub(pubId);
   const [scores, setScores] = useState<Scores>({ overall: 8, taste: 8, temperature: 8, head: 8, texture: 8, pour: 8, atmosphere: 8 });
   const [rateAtmos, setRateAtmos] = useState(true);
@@ -48,7 +51,11 @@ export default function RatePint() {
     };
   }, []);
 
-  if (!p) return <Body>Pub not found.</Body>;
+  useEffect(() => {
+    if (!p) void loadPub(pubId);
+  }, [p, pubId, loadPub]);
+
+  if (!p) return <Body>Loading…</Body>;
   const visit = verifyVisit(p, fix);
   const set = (k: keyof Scores) => (v: number) => setScores((s) => ({ ...s, [k]: v }));
 
@@ -57,12 +64,15 @@ export default function RatePint() {
     if (!res.canceled) setPhoto(res.assets[0].uri);
   };
 
-  const post = () => {
+  const post = async () => {
+    if (!gate()) return;
     const pricePence = price ? Math.round(parseFloat(price.replace(/[£,]/g, '')) * 100) : null;
     const draft = { ...scores, atmosphere: rateAtmos ? scores.atmosphere : null, pricePence };
     const invalid = validateRating(draft);
     if (invalid) return setError(invalid);
-    const res = addRating({ pubId: p.id, ...draft, note: note.trim(), photoUri: photo, anonymous, fix });
+    setBusy(true);
+    const res = await addRating({ pubId: p.id, ...draft, note: note.trim(), photoUri: photo, anonymous, fix });
+    setBusy(false);
     if (!res.ok) return setError(res.reason);
     router.replace(`/card/${res.rating.id}`);
   };
@@ -128,7 +138,7 @@ export default function RatePint() {
       </Card>
 
       {error ? <Body style={{ color: c.danger }}>{error}</Body> : null}
-      <Button label="Post rating" onPress={post} />
+      <Button label={busy ? 'Posting…' : 'Post rating'} disabled={busy} onPress={() => void post()} />
       <Small style={{ textAlign: 'center' }}>Rated {new Date().toLocaleString('en-GB', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}. One rating a visit.</Small>
     </ScrollView>
   );

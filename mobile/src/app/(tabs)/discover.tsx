@@ -16,7 +16,7 @@ const SCOPES = ['Near me', 'Fulham', 'London', 'United Kingdom'] as const;
 export default function Discover() {
   const c = usePalette();
   const insets = useSafeAreaInsets();
-  const { pubs, here } = useStore();
+  const { pubs, here, loading, error } = useStore();
   const [sort, setSort] = useState<Sort>('best');
   const [atmos, setAtmos] = useState<(typeof ATMOS)[number]>('Any');
   const [scope, setScope] = useState<(typeof SCOPES)[number]>('Near me');
@@ -66,7 +66,8 @@ export default function Discover() {
         {list.map((p, i) => (
           <PubRow key={p.id} pub={p} rank={sort === 'best' ? i + 1 : null} />
         ))}
-        {list.length === 0 ? <Body muted>No pubs match those filters yet.</Body> : null}
+        {error ? <Body style={{ color: c.danger }}>Couldn&apos;t load pubs: {error}</Body> : null}
+        {list.length === 0 && !error ? <Body muted>{loading ? 'Finding pubs near you…' : 'No pubs match those filters yet.'}</Body> : null}
       </View>
     </ScrollView>
   );
