@@ -5,7 +5,7 @@
 
 import { createClient, type Session } from "@supabase/supabase-js"
 import { useEffect, useState } from "react"
-import { LOCATIONS, distanceKm, type LocationKey, type PintRating, type Pub } from "./pubs"
+import { LOCATIONS, distanceKm, type LocationKey, type PintRating, type Pub, type TagKey } from "./pubs"
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://yhttayboxljswczexspg.supabase.co"
 const KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "sb_publishable_8aeFY-i4xdQPbQ7kA_BRjA_WfoJR18a"
@@ -35,10 +35,14 @@ type DirectoryRow = {
   brand: string | null
   logo_url: string | null
   image_url: string | null
+  pint_score: number | null
+  pub_score: number | null
+  price_updated_at: string | null
+  under_review: boolean | null
 }
 
 const COLS =
-  "id,name,address,neighbourhood,city,country,atmosphere,lat,lng,rating_count,verified_share,pour,taste_temperature,consistency,atmosphere_service,value,median_price_pence,excellence_index,website,brand,logo_url,image_url"
+  "id,name,address,neighbourhood,city,country,atmosphere,lat,lng,rating_count,verified_share,pour,taste_temperature,consistency,atmosphere_service,value,median_price_pence,excellence_index,website,brand,logo_url,image_url,pint_score,pub_score,price_updated_at,under_review"
 
 function toPub(r: DirectoryRow, origin?: { lat: number; lng: number }): Pub {
   const ten = (v: number | null) => (v == null ? 0 : Math.round(Number(v) * 10))
@@ -70,6 +74,10 @@ function toPub(r: DirectoryRow, origin?: { lat: number; lng: number }): Pub {
     brand: r.brand,
     atmosphereTag: r.atmosphere,
     distanceKm: origin ? distanceKm(origin, r) : undefined,
+    pintScore: r.pint_score,
+    pubScore: r.pub_score,
+    priceUpdatedAt: r.price_updated_at,
+    underReview: !!r.under_review,
   }
 }
 
@@ -143,12 +151,15 @@ type RatingRow = {
   rated_at: string
   display_name: string | null
   reply: string | null
+  tags: TagKey[] | null
+  visited_on: string | null
+  photo_path: string | null
 }
 
 export async function loadRatings(pubId: string): Promise<PintRating[]> {
   const { data, error } = await supabase
     .from("public_ratings")
-    .select("id,overall,taste,temperature,head,texture,pour,price_pence,note,verification,rated_at,display_name,reply")
+    .select("id,overall,taste,temperature,head,texture,pour,price_pence,note,verification,rated_at,display_name,reply,tags,visited_on,photo_path")
     .eq("pub_id", pubId)
     .order("rated_at", { ascending: false })
     .limit(50)
@@ -176,6 +187,9 @@ export async function loadRatings(pubId: string): Promise<PintRating[]> {
       verified: r.verification !== "none",
       comment: r.note ?? "",
       reply: r.reply ?? undefined,
+      tags: r.tags ?? [],
+      visitedOn: r.visited_on,
+      photoUrl: r.photo_path ? supabase.storage.from("pint-photos").getPublicUrl(r.photo_path).data.publicUrl : null,
     }
   })
 }
@@ -222,10 +236,38 @@ export type NewRating = {
   pricePence?: number | null
   note?: string
   fix?: { lat: number; lng: number; accuracy: number } | null
+  tags?: TagKey[]
+  visitedOn?: string
+  photo?: File | null
+}
+
+/** Shrinks a phone photo to at most 1600 px on the long side as a JPEG before upload. */
+async function shrink(file: File): Promise<Blob> {
+  try {
+    const bmp = await createImageBitmap(file)
+    const scale = Math.min(1, 1600 / Math.max(bmp.width, bmp.height))
+    const canvas = document.createElement("canvas")
+    canvas.width = Math.round(bmp.width * scale)
+    canvas.height = Math.round(bmp.height * scale)
+    canvas.getContext("2d")!.drawImage(bmp, 0, 0, canvas.width, canvas.height)
+    return await new Promise((ok) => canvas.toBlob((b) => ok(b ?? file), "image/jpeg", 0.85))
+  } catch {
+    return file
+  }
 }
 
 export async function submitRating(userId: string, r: NewRating) {
+  let photoPath: string | null = null
+  if (r.photo) {
+    const path = `${userId}/${crypto.randomUUID()}.jpg`
+    const { error: upErr } = await supabase.storage.from("pint-photos").upload(path, await shrink(r.photo), { contentType: "image/jpeg" })
+    if (upErr) throw new Error(`Couldn't upload the photo: ${upErr.message}`)
+    photoPath = path
+  }
   const { error } = await supabase.from("ratings").insert({
+    photo_path: photoPath,
+    tags: r.tags ?? [],
+    visited_on: r.visitedOn ?? null,
     pub_id: r.pubId,
     user_id: userId,
     overall: r.overall,
@@ -257,4 +299,11 @@ export async function myStamps(userId: string): Promise<Stamp[]> {
       seen.set(r.pub_id, { pubId: r.pub_id, name: r.pubs?.name ?? "A pub", city: r.pubs?.city ?? "", country: r.pubs?.country ?? "", at: r.rated_at, index: null, verified: r.verification !== "none" })
   }
   return [...seen.values()]
+}
+
+export type ReportReason = "fake" | "not_there" | "offensive" | "staff" | "other"
+
+export async function reportRating(ratingId: string, reason: ReportReason) {
+  const { error } = await supabase.from("rating_reports").insert({ rating_id: ratingId, reason })
+  if (error && error.code !== "23505") throw error
 }

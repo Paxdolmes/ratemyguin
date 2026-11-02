@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
 import { AwardMedallion } from "@/components/brand/award-medallion"
-import { BadgeCheck, CalendarClock, Scale, ShieldCheck, Users } from "lucide-react"
+import { BadgeCheck, CalendarClock, Flag, Gauge, GlassWater, Scale, ShieldCheck, Users } from "lucide-react"
 import { BandChip } from "@/components/band-chip"
 import { COMPONENT_LABELS, WEIGHTS, bandFor, weightedIndex, type Components } from "@/lib/pubs"
 import { cn } from "@/lib/utils"
@@ -42,8 +42,8 @@ const FAIRNESS = [
   },
   {
     icon: CalendarClock,
-    title: "Last 12 months only",
-    copy: "Scores use ratings from the past year, so a pub that's changed hands, or changed its lines, isn't stuck with its old reputation.",
+    title: "Recent pints count most",
+    copy: "Only the last 12 months count, and a rating from six months ago carries half the weight of one from today. No pub can live off an old reputation.",
   },
   {
     icon: Users,
@@ -54,6 +54,21 @@ const FAIRNESS = [
     icon: Scale,
     title: "Credibility weighting",
     copy: "Established raters count for more than brand-new accounts. One rating per pub every 3 hours, and impossible journeys between pubs are blocked.",
+  },
+  {
+    icon: Gauge,
+    title: "Harsh and generous raters",
+    copy: "If someone always scores a point above everyone else at the same pubs, we take that point back off. The score reflects the pint, not the person.",
+  },
+  {
+    icon: Flag,
+    title: "Suspicious activity",
+    copy: "Anyone can report a rating. A sudden burst of ratings flags a pub as under review, and moderators remove fakes.",
+  },
+  {
+    icon: GlassWater,
+    title: "Pint score and Pub score",
+    copy: "Every pub shows a Pint score for the glass alone and a Pub score for the room and service, so a great atmosphere can't hide a poor pint.",
   },
   {
     icon: ShieldCheck,
@@ -176,7 +191,7 @@ export default function ScoringPage() {
 
       <section className="mx-auto flex w-full max-w-[1440px] flex-col gap-8 px-4 pb-14 md:px-8">
         <h2 className="font-display text-4xl font-semibold">Verification and fairness</h2>
-        <ul className="grid grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-2 lg:grid-cols-5">
+        <ul className="grid grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-2 lg:grid-cols-4">
           {FAIRNESS.map((f) => (
             <li key={f.title} className="flex flex-col gap-2">
               <f.icon className="size-6 text-pub" aria-hidden="true" />

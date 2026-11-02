@@ -2,12 +2,12 @@
 
 import Link from "next/link"
 import { useEffect, useState } from "react"
-import { Check, Search, Stamp } from "lucide-react"
+import { Camera, Check, Search, Stamp, X } from "lucide-react"
 import { RatingSlider } from "./rating-slider"
 import { VerifyCard, type VerifyState } from "./verify-card"
 import { PubBadge } from "@/components/pub/pub-badge"
 import { loadPub, searchPubs, submitRating, useSession } from "@/lib/live"
-import { currencyFor, distanceKm, pubHref, type Pub } from "@/lib/pubs"
+import { TAGS, currencyFor, distanceKm, pubHref, type Pub, type TagKey } from "@/lib/pubs"
 
 const PARTS = [
   { key: "pour", label: "Pour", hint: "Two-part pour, left to settle" },
@@ -84,6 +84,17 @@ export function RateForm({ initialSlug }: { initialSlug?: string }) {
   const [overall, setOverall] = useState(8)
   const [price, setPrice] = useState("")
   const [note, setNote] = useState("")
+  const [tags, setTags] = useState<TagKey[]>([])
+  const today = new Date().toISOString().slice(0, 10)
+  const [visitedOn, setVisitedOn] = useState(today)
+  const [photo, setPhoto] = useState<File | null>(null)
+  const [preview, setPreview] = useState<string | null>(null)
+  const toggleTag = (t: TagKey) => setTags((xs) => (xs.includes(t) ? xs.filter((x) => x !== t) : [...xs, t]))
+  const pickPhoto = (f: File | null) => {
+    if (preview) URL.revokeObjectURL(preview)
+    setPhoto(f)
+    setPreview(f ? URL.createObjectURL(f) : null)
+  }
   const [verify, setVerify] = useState<VerifyState>({ status: "idle" })
   const [fix, setFix] = useState<{ lat: number; lng: number; accuracy: number } | null>(null)
   const [submitted, setSubmitted] = useState(false)
@@ -135,6 +146,9 @@ export function RateForm({ initialSlug }: { initialSlug?: string }) {
         pricePence: price ? Math.round(priceNum * 100) : null,
         note,
         fix,
+        tags,
+        visitedOn,
+        photo,
       })
       setSubmitted(true)
     } catch (e) {
@@ -229,6 +243,37 @@ export function RateForm({ initialSlug }: { initialSlug?: string }) {
             />
           ))}
         </fieldset>
+
+        <fieldset className="flex flex-col gap-4">
+          <legend className="mb-2 font-display text-2xl font-bold">Why that score?</legend>
+          <p className="-mt-2 text-sm text-muted-foreground">Optional. Tap anything that applies.</p>
+          {[true, false].map((good) => (
+            <div key={String(good)} className="flex flex-wrap gap-2">
+              {(Object.keys(TAGS) as TagKey[])
+                .filter((t) => TAGS[t].good === good)
+                .map((t) => {
+                  const on = tags.includes(t)
+                  return (
+                    <button
+                      key={t}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() => toggleTag(t)}
+                      className={
+                        on
+                          ? good
+                            ? "rounded-full border border-pub bg-pub px-3 py-1.5 text-sm font-medium text-paper"
+                            : "rounded-full border border-destructive bg-destructive px-3 py-1.5 text-sm font-medium text-paper"
+                          : "rounded-full border border-border bg-paper px-3 py-1.5 text-sm font-medium hover:bg-cream"
+                      }
+                    >
+                      {TAGS[t].label}
+                    </button>
+                  )
+                })}
+            </div>
+          ))}
+        </fieldset>
       </div>
 
       <div className="flex flex-col gap-6 lg:sticky lg:top-24 lg:w-[400px] lg:shrink-0">
@@ -255,6 +300,45 @@ export function RateForm({ initialSlug }: { initialSlug?: string }) {
             <span id="price-hint" className="text-xs text-muted-foreground">
               {priceValid ? "Optional, but it powers the value score." : "Enter the price of the pint, e.g. 6.40"}
             </span>
+          </div>
+
+          <div className="flex flex-col gap-2 border-t border-stout/15 pt-5">
+            <span className="font-display text-base font-semibold">Photo of the pint</span>
+            {preview ? (
+              <div className="relative w-fit">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={preview} alt="Your pint" className="h-40 w-28 rounded-xl object-cover" />
+                <button
+                  type="button"
+                  onClick={() => pickPhoto(null)}
+                  className="absolute -right-2 -top-2 flex size-7 items-center justify-center rounded-full bg-stout text-cream"
+                  aria-label="Remove photo"
+                >
+                  <X className="size-4" aria-hidden="true" />
+                </button>
+              </div>
+            ) : (
+              <label className="flex h-12 cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-stout/30 bg-paper text-sm font-semibold hover:bg-cream">
+                <Camera className="size-4" aria-hidden="true" />
+                Add a photo
+                <input type="file" accept="image/*" capture="environment" className="sr-only" onChange={(e) => pickPhoto(e.target.files?.[0] ?? null)} />
+              </label>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-2 border-t border-stout/15 pt-5">
+            <label htmlFor="visited" className="font-display text-base font-semibold">
+              When was it?
+            </label>
+            <input
+              id="visited"
+              type="date"
+              value={visitedOn}
+              max={today}
+              min={new Date(Date.now() - 29 * 86400000).toISOString().slice(0, 10)}
+              onChange={(e) => setVisitedOn(e.target.value || today)}
+              className="h-12 rounded-xl border border-border bg-paper px-3 text-base outline-none focus-visible:outline-2 focus-visible:outline-pub"
+            />
           </div>
 
           <div className="flex flex-col gap-2 border-t border-stout/15 pt-5">

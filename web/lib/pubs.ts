@@ -35,6 +35,10 @@ export type Pub = {
   brand?: string | null
   atmosphereTag?: string | null
   distanceKm?: number
+  pintScore?: number | null // the glass alone: pour, taste and temperature, consistency
+  pubScore?: number | null // atmosphere and service, out of 100
+  priceUpdatedAt?: string | null
+  underReview?: boolean
 }
 
 export type Band = "exceptional" | "gold" | "recommended" | "unbanded"
@@ -138,6 +142,38 @@ export type PintRating = {
   verified: boolean
   comment: string
   reply?: string
+  tags: TagKey[]
+  photoUrl?: string | null
+  visitedOn?: string | null
+}
+
+/** Pour and fault tags: say why a pint scored what it did. */
+export const TAGS = {
+  two_part_pour: { label: "Two-part pour", good: true },
+  settled: { label: "Left to settle", good: true },
+  good_head: { label: "Proper head", good: true },
+  creamy: { label: "Creamy", good: true },
+  cold: { label: "Well chilled", good: true },
+  fresh: { label: "Fresh lines", good: true },
+  clean_glass: { label: "Clean glass", good: true },
+  rushed_pour: { label: "Rushed pour", good: false },
+  flat: { label: "Flat", good: false },
+  thin_head: { label: "Thin head", good: false },
+  too_warm: { label: "Too warm", good: false },
+  too_cold: { label: "Too cold", good: false },
+  metallic: { label: "Metallic", good: false },
+  sour: { label: "Sour", good: false },
+  dirty_glass: { label: "Dirty glass", good: false },
+} as const
+export type TagKey = keyof typeof TAGS
+
+export function timeAgo(iso: string) {
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000)
+  if (days < 1) return "today"
+  if (days === 1) return "yesterday"
+  if (days < 14) return `${days} days ago`
+  if (days < 60) return `${Math.round(days / 7)} weeks ago`
+  return `${Math.round(days / 30)} months ago`
 }
 
 /** Monthly average of the overall score (×10), oldest first, for the consistency line. */

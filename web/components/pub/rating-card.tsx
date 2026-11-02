@@ -1,5 +1,9 @@
-import { BadgeCheck, MapPinOff, MessageSquareReply } from "lucide-react"
-import { currencyFor, type City, type PintRating } from "@/lib/pubs"
+"use client"
+
+import { useState } from "react"
+import { BadgeCheck, Flag, MapPinOff, MessageSquareReply } from "lucide-react"
+import { reportRating, useSession } from "@/lib/live"
+import { TAGS, currencyFor, type City, type PintRating } from "@/lib/pubs"
 
 const SUBS: { key: keyof PintRating; label: string }[] = [
   { key: "pour", label: "Pour" },
@@ -9,31 +13,49 @@ const SUBS: { key: keyof PintRating; label: string }[] = [
   { key: "temperature", label: "Temp" },
 ]
 
-function PintPhoto({ seed }: { seed: number }) {
-  const headHeight = 16 + (seed % 3) * 4
+function ReportLink({ id }: { id: string }) {
+  const { session } = useSession()
+  const [state, setState] = useState<"idle" | "open" | "sent">("idle")
+  if (!session) return null
+  if (state === "sent") return <span className="text-xs text-muted-foreground">Thanks, we&apos;ll take a look.</span>
+  if (state === "idle")
+    return (
+      <button type="button" onClick={() => setState("open")} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+        <Flag className="size-3" aria-hidden="true" /> Report
+      </button>
+    )
   return (
-    <div
-      className="flex h-28 w-20 shrink-0 flex-col overflow-hidden rounded-lg bg-stout md:h-32 md:w-24"
-      role="img"
-      aria-label="Pint photo"
-    >
-      <div className="bg-cream" style={{ height: `${headHeight}%` }} />
-      <div className="flex flex-1 items-end justify-center pb-2">
-        <span className="text-[10px] font-medium uppercase tracking-wider text-cream/40">Photo</span>
-      </div>
-    </div>
+    <span className="flex flex-wrap items-center gap-1.5 text-xs">
+      <span className="text-muted-foreground">Why?</span>
+      {(
+        [
+          ["fake", "Looks fake"],
+          ["not_there", "Wasn't there"],
+          ["staff", "Pub staff"],
+          ["offensive", "Offensive"],
+        ] as const
+      ).map(([k, l]) => (
+        <button
+          key={k}
+          type="button"
+          onClick={() => reportRating(id, k).then(() => setState("sent")).catch(() => setState("sent"))}
+          className="rounded-full border border-border px-2 py-0.5 hover:bg-cream"
+        >
+          {l}
+        </button>
+      ))}
+    </span>
   )
 }
 
 export function RatingCard({
   rating,
-  index,
   city,
   ownerName,
   pubName,
 }: {
   rating: PintRating
-  index: number
+  index?: number
   city: City
   ownerName?: string
   pubName: string
@@ -41,7 +63,12 @@ export function RatingCard({
   return (
     <article className="flex flex-col gap-4 border-b border-border py-6 first:pt-0">
       <div className="flex gap-4">
-        <PintPhoto seed={index} />
+        {rating.photoUrl && (
+          <a href={rating.photoUrl} target="_blank" rel="noopener noreferrer" className="shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={rating.photoUrl} alt={`Pint at ${pubName}`} loading="lazy" className="h-28 w-20 rounded-lg object-cover md:h-32 md:w-24" />
+          </a>
+        )}
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-2.5">
@@ -54,7 +81,9 @@ export function RatingCard({
               <div className="flex flex-col">
                 <span className="text-sm font-semibold">{rating.user}</span>
                 <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                  {rating.date}
+                  {rating.visitedOn
+                    ? new Date(rating.visitedOn).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
+                    : rating.date}
                   <span aria-hidden="true">·</span>
                   {rating.verified ? (
                     <span className="inline-flex items-center gap-0.5 font-medium text-pub">
@@ -73,7 +102,23 @@ export function RatingCard({
               <span className="text-xs text-muted-foreground">/10</span>
             </div>
           </div>
-          <p className="text-sm leading-relaxed text-pretty">{rating.comment}</p>
+          {rating.comment && <p className="text-sm leading-relaxed text-pretty">{rating.comment}</p>}
+          {rating.tags.length > 0 && (
+            <ul className="flex flex-wrap gap-1.5" aria-label="Tags">
+              {rating.tags.map((t) => (
+                <li
+                  key={t}
+                  className={
+                    TAGS[t]?.good
+                      ? "rounded-full bg-pub/10 px-2 py-0.5 text-xs font-medium text-pub"
+                      : "rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive"
+                  }
+                >
+                  {TAGS[t]?.label ?? t}
+                </li>
+              ))}
+            </ul>
+          )}
           <dl className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
             {SUBS.map((s) => (
               <div key={s.key} className="flex gap-1">
@@ -91,6 +136,7 @@ export function RatingCard({
               </div>
             )}
           </dl>
+          <ReportLink id={rating.id} />
         </div>
       </div>
 

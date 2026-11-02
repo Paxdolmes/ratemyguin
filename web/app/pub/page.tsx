@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { Suspense, useEffect, useState } from "react"
-import { BadgeCheck, ChevronLeft, MapPin, Plus } from "lucide-react"
+import { BadgeCheck, ChevronLeft, MapPin, Plus, ShieldAlert } from "lucide-react"
 import { AwardChip, BandChip } from "@/components/band-chip"
 import { BreakdownBars } from "@/components/pub/breakdown-bars"
 import { PubBadge } from "@/components/pub/pub-badge"
@@ -12,7 +12,7 @@ import { ScoreDial } from "@/components/pub/score-dial"
 import { Sparkline } from "@/components/pub/sparkline"
 import { Trend } from "@/components/trend"
 import { cityMedianPrice, cityPosition, loadPub, loadRatings } from "@/lib/live"
-import { MIN_RATINGS, bandFor, currencyFor, excellenceIndex, formatPrice, isRated, monthlyTrend, type PintRating, type Pub } from "@/lib/pubs"
+import { MIN_RATINGS, bandFor, currencyFor, excellenceIndex, formatPrice, isRated, monthlyTrend, timeAgo, TAGS, type PintRating, type Pub, type TagKey } from "@/lib/pubs"
 
 export default function PubPageRoute() {
   return (
@@ -75,6 +75,11 @@ function PubPage() {
   const diff = pub.price != null && median != null ? pub.price - median : null
   const cur = currencyFor(pub.city)
   const trend = monthlyTrend(ratings)
+  const tagCounts = Object.entries(
+    ratings.flatMap((r) => r.tags).reduce<Record<string, number>>((m, t) => ({ ...m, [t]: (m[t] ?? 0) + 1 }), {}),
+  )
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6) as [TagKey, number][]
 
   return (
     <main className="flex flex-col">
@@ -129,6 +134,7 @@ function PubPage() {
                 <dt className="text-xs text-muted-foreground">Typical price</dt>
                 <dd className="flex flex-col">
                   <span className="font-display text-2xl font-bold tabular-nums md:text-3xl">{formatPrice(pub)}</span>
+                  {pub.priceUpdatedAt && <span className="text-xs text-muted-foreground">Reported {timeAgo(pub.priceUpdatedAt)}</span>}
                   {diff != null && (
                     <span className="text-xs text-muted-foreground">
                       {Math.abs(diff) < 0.05 ? "At city median" : `${cur}${Math.abs(diff).toFixed(2)} ${diff < 0 ? "under" : "over"} median`}
@@ -152,6 +158,26 @@ function PubPage() {
               {rated && <Trend delta={pub.trend} className="text-pub-light" />}
             </div>
             <ScoreDial score={score} />
+            {(pub.pintScore != null || pub.pubScore != null) && (
+              <dl className="grid w-full grid-cols-2 divide-x divide-cream/15 rounded-2xl border border-cream/15">
+                <div className="flex flex-col items-center gap-0.5 p-3">
+                  <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-cream/60">Pint</dt>
+                  <dd className="font-display text-3xl font-semibold tabular-nums text-pub-light">{pub.pintScore ?? "–"}</dd>
+                  <span className="text-[11px] text-cream/50">the glass alone</span>
+                </div>
+                <div className="flex flex-col items-center gap-0.5 p-3">
+                  <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-cream/60">Pub</dt>
+                  <dd className="font-display text-3xl font-semibold tabular-nums">{pub.pubScore ?? "–"}</dd>
+                  <span className="text-[11px] text-cream/50">room and service</span>
+                </div>
+              </dl>
+            )}
+            {pub.underReview && (
+              <p className="flex items-center gap-2 rounded-xl bg-cream/10 px-3 py-2 text-xs text-cream/80">
+                <ShieldAlert className="size-4 shrink-0 text-pub-light" aria-hidden="true" />
+                A sudden burst of ratings is being checked. The score may change.
+              </p>
+            )}
             {rated ? (
               <BandChip band={band} size="md" onDark />
             ) : (
@@ -175,6 +201,25 @@ function PubPage() {
 
       <section className="mx-auto flex w-full max-w-[1440px] flex-col gap-10 px-4 py-10 md:px-8 md:py-14 lg:flex-row lg:gap-16">
         <div className="flex flex-col gap-10 lg:w-[420px] lg:shrink-0">
+          {tagCounts.length > 0 && (
+            <div className="flex flex-col gap-3">
+              <h2 className="font-display text-2xl font-bold">What drinkers say</h2>
+              <ul className="flex flex-wrap gap-2">
+                {tagCounts.map(([t, n]) => (
+                  <li
+                    key={t}
+                    className={
+                      TAGS[t]?.good
+                        ? "rounded-full bg-pub/10 px-3 py-1 text-sm font-medium text-pub"
+                        : "rounded-full bg-destructive/10 px-3 py-1 text-sm font-medium text-destructive"
+                    }
+                  >
+                    {TAGS[t]?.label ?? t} <span className="tabular-nums opacity-70">× {n}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           {rated ? (
             <>
               <div className="flex flex-col gap-5">

@@ -1,16 +1,16 @@
+import { useId } from 'react'
 import { BRAND } from './tokens'
 
 /*
- * Tulip stout glass on a 40 x 64 grid (centre x = 20), proportioned like a real
- * imperial stout pint: rim 29 wide, a slight neck under the head, the bulge a third
- * of the way down, tapering to a 21-wide heavy base.
+ * Stout pint glass on a 40 x 64 grid (centre x = 20): one smooth line from a wide rim,
+ * swelling gently a third of the way down, then tapering to a heavy base.
  */
 const GLASS_BODY =
-  'M5.6 3 H34.4 C34.3 5.5 33.9 6.5 33.9 9 C33.9 12 35.2 16 35.2 21 C35.2 32 31.0 48 30.4 57 L30.4 59.4 Q30.4 61 28.799999999999997 61 H11.2 Q9.6 61 9.6 59.4 L9.6 57 C9.0 48 4.800000000000001 32 4.800000000000001 21 C4.800000000000001 16 6.1 12 6.1 9 C6.1 6.5 5.699999999999999 5.5 5.6 3 Z'
+  'M7.2 3 H32.8 C33.3 9 34.2 17 34.2 24 C34.2 38 30.3 50 29.4 58 L29.4 59.6 Q29.4 61 28.0 61 H12.0 Q10.6 61 10.6 59.6 L10.6 58 C9.7 50 5.8 38 5.8 24 C5.8 17 6.7 9 7.2 3 Z'
 const GLASS_OUTLINE = GLASS_BODY
-const HEAD = 'M5.6 3 H34.4 C34.3 5.5 33.9 6.5 33.9 9 L33.95 10.5 Q20 11.3 6.05 10.5 L6.1 9 C6.1 6.5 5.7 5.5 5.6 3 Z'
-const BASE_LINE = 'M9.6 57 H30.4'
-const REFLECTION = 'M8.4 14 C7.8 24 9.6 40 11.4 52'
+const HEAD_DEPTH = 10 // the head fills the glass from the rim down to here
+const BASE_LINE = 'M10.6 58 H29.4'
+const REFLECTION = 'M9.4 15 C8.4 26 9.6 40 11.6 52'
 
 export type GlassTone = 'onDark' | 'onLight' | 'gilt' | 'ink'
 
@@ -45,16 +45,15 @@ export function GlassGlyph({
   detailed = false,
 }: GlassGlyphProps) {
   const scale = height / 64
+  const clip = 'glass-' + useId().replace(/[^a-zA-Z0-9_-]/g, '')
   return (
     <g transform={`translate(${x} ${y}) scale(${scale})`}>
       <path d={GLASS_BODY} fill={body} />
-      <path
-        d={HEAD}
-        fill={head}
-        stroke={stroke}
-        strokeWidth={strokeWidth * 0.7}
-        strokeLinejoin="round"
-      />
+      <clipPath id={clip}>
+        <path d={GLASS_BODY} />
+      </clipPath>
+      <rect x="0" y="0" width="40" height={HEAD_DEPTH} fill={head} clipPath={`url(#${clip})`} />
+      <path d={`M4 ${HEAD_DEPTH} H36`} stroke={stroke} strokeWidth={strokeWidth * 0.5} clipPath={`url(#${clip})`} />
       <path
         d={GLASS_OUTLINE}
         fill="none"
