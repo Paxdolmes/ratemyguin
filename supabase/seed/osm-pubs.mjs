@@ -17,12 +17,34 @@ if (!token || !ref) throw new Error('Set SUPABASE_ACCESS_TOKEN and PROJECT_REF')
 
 const [s, w, n, e] = area.bbox;
 const query = `[out:json][timeout:180];(node["amenity"="pub"](${s},${w},${n},${e});way["amenity"="pub"](${s},${w},${n},${e}););out center tags;`;
-const res = await fetch('https://overpass-api.de/api/interpreter', {
-  method: 'POST',
-  headers: { 'content-type': 'application/x-www-form-urlencoded', 'user-agent': 'ratemyguin-seed/1.0' },
-  body: new URLSearchParams({ data: query }),
-});
-if (!res.ok) throw new Error(`Overpass ${res.status}: ${await res.text()}`);
+// The public Overpass servers are often busy, so try a few with backoff.
+const SERVERS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
+];
+async function overpass() {
+  let last;
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const url = SERVERS[attempt % SERVERS.length];
+    try {
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: { 'content-type': 'application/x-www-form-urlencoded', 'user-agent': 'ratemyguin-seed/1.0' },
+        body: new URLSearchParams({ data: query }),
+      });
+      if (r.ok) return r;
+      last = `${url} ${r.status}: ${(await r.text()).slice(0, 200)}`;
+    } catch (err) {
+      last = `${url}: ${err.message}`;
+    }
+    const wait = 5000 * 2 ** attempt;
+    console.log(`Overpass busy (${last.split('\n')[0]}), retrying in ${wait / 1000}s`);
+    await new Promise((ok) => setTimeout(ok, wait));
+  }
+  throw new Error(`Overpass failed: ${last}`);
+}
+const res = await overpass();
 const { elements } = await res.json();
 
 const q = (v) => (v == null || v === '' ? 'null' : `'${String(v).replace(/'/g, "''")}'`);
