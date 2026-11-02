@@ -9,6 +9,7 @@ import { BreakdownBars } from "@/components/pub/breakdown-bars"
 import { PubBadge } from "@/components/pub/pub-badge"
 import { RatingCard } from "@/components/pub/rating-card"
 import { ScoreDial } from "@/components/pub/score-dial"
+import { SaveToList } from "@/components/pub/save-to-list"
 import { Sparkline } from "@/components/pub/sparkline"
 import { Trend } from "@/components/trend"
 import { cityMedianPrice, cityPosition, loadPub, loadRatings, nearestStations, type Station } from "@/lib/live"
@@ -130,6 +131,7 @@ function PubPage() {
                   <Footprints className="size-4" aria-hidden="true" />
                   Walking directions
                 </a>
+                <SaveToList pubId={pub.slug} />
                 {stations.map((st) => (
                   <span key={st.name} className="inline-flex items-center gap-1.5 text-muted-foreground">
                     <TrainFront className="size-4" aria-hidden="true" />

@@ -293,18 +293,18 @@ export async function submitRating(userId: string, r: NewRating) {
   if (error) throw error
 }
 
-export type Stamp = { pubId: string; name: string; city: string; country: string; at: string; index: number | null; verified: boolean }
+export type Stamp = { pubId: string; name: string; city: string; country: string; hood: string | null; at: string; index: number | null; verified: boolean }
 
 export async function myStamps(userId: string): Promise<Stamp[]> {
   const { data } = await supabase
     .from("ratings")
-    .select("pub_id,rated_at,verification,pubs(name,city,country)")
+    .select("pub_id,rated_at,verification,pubs(name,city,country,neighbourhood)")
     .eq("user_id", userId)
     .order("rated_at", { ascending: true })
   const seen = new Map<string, Stamp>()
-  for (const r of (data ?? []) as unknown as { pub_id: string; rated_at: string; verification: string; pubs: { name: string; city: string; country: string } }[]) {
+  for (const r of (data ?? []) as unknown as { pub_id: string; rated_at: string; verification: string; pubs: { name: string; city: string; country: string; neighbourhood: string | null } }[]) {
     if (!seen.has(r.pub_id))
-      seen.set(r.pub_id, { pubId: r.pub_id, name: r.pubs?.name ?? "A pub", city: r.pubs?.city ?? "", country: r.pubs?.country ?? "", at: r.rated_at, index: null, verified: r.verification !== "none" })
+      seen.set(r.pub_id, { pubId: r.pub_id, name: r.pubs?.name ?? "A pub", city: r.pubs?.city ?? "", country: r.pubs?.country ?? "", hood: r.pubs?.neighbourhood ?? null, at: r.rated_at, index: null, verified: r.verification !== "none" })
   }
   return [...seen.values()]
 }
@@ -321,4 +321,168 @@ export type Station = { name: string; kind: "tube" | "overground" | "elizabeth" 
 export async function nearestStations(lat: number, lng: number): Promise<Station[]> {
   const { data } = await supabase.rpc("nearest_stations", { p_lat: lat, p_lng: lng })
   return (data ?? []) as Station[]
+}
+
+// ── Pint diary ─────────────────────────────────────────────────────────────
+export type DiaryEntry = {
+  id: string
+  pubId: string
+  pubName: string
+  area: string
+  overall: number
+  note: string | null
+  tags: TagKey[]
+  photoUrl: string | null
+  ratedAt: string
+  visitedOn: string | null
+  verified: boolean
+  anonymous: boolean
+}
+
+export async function myDiary(userId: string): Promise<DiaryEntry[]> {
+  const { data, error } = await supabase
+    .from("ratings")
+    .select("id,pub_id,overall,note,tags,photo_path,rated_at,visited_on,verification,anonymous,pubs(name,city,neighbourhood)")
+    .eq("user_id", userId)
+    .order("rated_at", { ascending: false })
+    .limit(200)
+  if (error) throw error
+  type Row = { id: string; pub_id: string; overall: number; note: string | null; tags: TagKey[] | null; photo_path: string | null; rated_at: string; visited_on: string | null; verification: string; anonymous: boolean; pubs: { name: string; city: string; neighbourhood: string | null } | null }
+  return ((data ?? []) as unknown as Row[]).map((r) => ({
+    id: r.id,
+    pubId: r.pub_id,
+    pubName: r.pubs?.name ?? "A pub",
+    area: r.pubs?.neighbourhood ?? r.pubs?.city ?? "",
+    overall: Number(r.overall),
+    note: r.note,
+    tags: r.tags ?? [],
+    photoUrl: r.photo_path ? supabase.storage.from("pint-photos").getPublicUrl(r.photo_path).data.publicUrl : null,
+    ratedAt: r.rated_at,
+    visitedOn: r.visited_on,
+    verified: r.verification !== "none",
+    anonymous: r.anonymous,
+  }))
+}
+
+export async function setRatingAnonymous(id: string, anonymous: boolean) {
+  const { error } = await supabase.rpc("set_rating_anonymous", { p_rating: id, p_anonymous: anonymous })
+  if (error) throw error
+}
+
+export async function setProfilePublic(userId: string, isPublic: boolean) {
+  const { error } = await supabase.from("profiles").update({ is_public: isPublic }).eq("id", userId)
+  if (error) throw error
+}
+
+export async function profileSettings(userId: string) {
+  const { data } = await supabase.from("profiles").select("handle,display_name,is_public").eq("id", userId).maybeSingle()
+  return data as { handle: string; display_name: string; is_public: boolean } | null
+}
+
+// ── Saved lists ────────────────────────────────────────────────────────────
+export type SavedList = { id: string; name: string; isPublic: boolean; pubs: { id: string; name: string; area: string }[] }
+
+export async function myLists(userId: string): Promise<SavedList[]> {
+  const { data, error } = await supabase
+    .from("lists")
+    .select("id,name,is_public,list_pubs(pub_id,added_at,pubs(name,city,neighbourhood))")
+    .eq("owner", userId)
+    .order("created_at", { ascending: true })
+  if (error) throw error
+  type Row = { id: string; name: string; is_public: boolean; list_pubs: { pub_id: string; pubs: { name: string; city: string; neighbourhood: string | null } | null }[] }
+  return ((data ?? []) as unknown as Row[]).map((l) => ({
+    id: l.id,
+    name: l.name,
+    isPublic: l.is_public,
+    pubs: l.list_pubs.map((lp) => ({ id: lp.pub_id, name: lp.pubs?.name ?? "A pub", area: lp.pubs?.neighbourhood ?? lp.pubs?.city ?? "" })),
+  }))
+}
+
+export async function createList(name: string): Promise<string> {
+  const { data, error } = await supabase.from("lists").insert({ name }).select("id").single()
+  if (error) throw error
+  return data.id as string
+}
+
+export async function deleteList(id: string) {
+  const { error } = await supabase.from("lists").delete().eq("id", id)
+  if (error) throw error
+}
+
+export async function setListPublic(id: string, isPublic: boolean) {
+  const { error } = await supabase.from("lists").update({ is_public: isPublic }).eq("id", id)
+  if (error) throw error
+}
+
+export async function addToList(listId: string, pubId: string) {
+  const { error } = await supabase.from("list_pubs").insert({ list_id: listId, pub_id: pubId })
+  if (error && error.code !== "23505") throw error
+}
+
+export async function removeFromList(listId: string, pubId: string) {
+  const { error } = await supabase.from("list_pubs").delete().eq("list_id", listId).eq("pub_id", pubId)
+  if (error) throw error
+}
+
+// ── Friends ────────────────────────────────────────────────────────────────
+export type Person = { id: string; handle: string; name: string }
+
+export async function findPeople(text: string): Promise<Person[]> {
+  const t = text.trim().replace(/^@/, "")
+  if (t.length < 2) return []
+  const { data } = await supabase.from("profiles").select("id,handle,display_name").ilike("handle", `${t}%`).limit(8)
+  return (data ?? []).map((p) => ({ id: p.id, handle: p.handle, name: p.display_name }))
+}
+
+export async function following(userId: string): Promise<Person[]> {
+  const { data } = await supabase.from("follows").select("followee,profiles!follows_followee_fkey(id,handle,display_name)").eq("follower", userId)
+  type Row = { followee: string; profiles: { id: string; handle: string; display_name: string } | null }
+  return ((data ?? []) as unknown as Row[]).filter((r) => r.profiles).map((r) => ({ id: r.profiles!.id, handle: r.profiles!.handle, name: r.profiles!.display_name }))
+}
+
+export async function follow(userId: string, other: string) {
+  const { error } = await supabase.from("follows").insert({ follower: userId, followee: other })
+  if (error && error.code !== "23505") throw error
+}
+
+export async function unfollow(userId: string, other: string) {
+  const { error } = await supabase.from("follows").delete().eq("follower", userId).eq("followee", other)
+  if (error) throw error
+}
+
+export type FeedItem = { id: string; who: string; pubId: string; pubName: string; overall: number; note: string | null; at: string; photoUrl: string | null }
+
+export async function friendsFeed(ids: string[]): Promise<FeedItem[]> {
+  if (!ids.length) return []
+  const { data } = await supabase
+    .from("public_ratings")
+    .select("id,pub_id,user_id,display_name,overall,note,rated_at,photo_path")
+    .in("user_id", ids)
+    .order("rated_at", { ascending: false })
+    .limit(30)
+  type Row = { id: string; pub_id: string; display_name: string | null; overall: number; note: string | null; rated_at: string; photo_path: string | null }
+  const rows = (data ?? []) as Row[]
+  const pubIds = [...new Set(rows.map((r) => r.pub_id))]
+  const names = new Map<string, string>()
+  if (pubIds.length) {
+    const { data: pubs } = await supabase.from("pubs").select("id,name").in("id", pubIds)
+    for (const p of pubs ?? []) names.set(p.id, p.name)
+  }
+  return rows.map((r) => ({
+    id: r.id,
+    who: r.display_name ?? "Someone",
+    pubId: r.pub_id,
+    pubName: names.get(r.pub_id) ?? "a pub",
+    overall: Number(r.overall),
+    note: r.note,
+    at: r.rated_at,
+    photoUrl: r.photo_path ? supabase.storage.from("pint-photos").getPublicUrl(r.photo_path).data.publicUrl : null,
+  }))
+}
+
+export type Favourite = { pub_id: string; name: string; city: string; pints: number; average: number }
+
+export async function favourites(userId: string): Promise<Favourite[]> {
+  const { data } = await supabase.rpc("favourites", { p_user: userId })
+  return ((data ?? []) as Favourite[]).map((f) => ({ ...f, average: Number(f.average) }))
 }

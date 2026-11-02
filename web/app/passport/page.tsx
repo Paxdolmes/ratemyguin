@@ -2,11 +2,16 @@
 
 import Link from "next/link"
 import { useEffect, useState } from "react"
-import { Building2, Flag, Plus, Trophy } from "lucide-react"
-import { myProfile, myStamps, useSession, type Stamp as StampRow } from "@/lib/live"
+import { BadgeCheck, Building2, Camera, Compass, Flag, MapPinned, MessageSquareText, Plus, Trophy } from "lucide-react"
+import { myDiary, myProfile, myStamps, useSession, type DiaryEntry, type Stamp as StampRow } from "@/lib/live"
+import { Diary } from "@/components/passport/diary"
+import { Friends } from "@/components/passport/friends"
+import { Lists } from "@/components/passport/lists"
 import { cn } from "@/lib/utils"
 
 const PUB_BADGES = [10, 25, 50, 100]
+const TABS = ["Stamps", "Badges", "Diary", "Lists", "Friends"] as const
+type Tab = (typeof TABS)[number]
 
 function Stamp({ name, area, date, score, index }: { name: string; area: string; date: string; score: number | null; index: number }) {
   const tilt = ["-rotate-3", "rotate-2", "-rotate-1", "rotate-3", "rotate-1", "-rotate-2"][index % 6]
@@ -82,9 +87,17 @@ export default function PassportPage() {
   const { session, ready } = useSession()
   const [stamps, setStamps] = useState<StampRow[]>([])
   const [name, setName] = useState<string | null>(null)
+  const [diary, setDiary] = useState<DiaryEntry[]>([])
+  const [tab, setTab] = useState<Tab>("Stamps")
+  useEffect(() => {
+    const h = window.location.hash.slice(1)
+    const t = TABS.find((x) => x.toLowerCase() === h)
+    if (t) setTab(t)
+  }, [])
   useEffect(() => {
     if (!session) return
     myStamps(session.user.id).then(setStamps).catch(() => {})
+    myDiary(session.user.id).then(setDiary).catch(() => {})
     myProfile(session.user.id).then((p) => setName(p?.display_name ?? null)).catch(() => {})
   }, [session])
 
@@ -93,7 +106,7 @@ export default function PassportPage() {
       <main className="mx-auto flex w-full max-w-xl flex-col gap-4 px-4 py-16">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-pub">Guin Passport</p>
         <h1 className="font-display text-5xl font-semibold leading-[0.95]">A stamp for every pub you rate.</h1>
-        <p className="text-muted-foreground">Collect pubs, cities and countries, and earn badges along the way. Sign in to start yours.</p>
+        <p className="text-muted-foreground">Collect pubs and neighbourhoods, keep a pint diary, save lists and follow friends. Sign in to start yours.</p>
         <Link href="/sign-in/?next=%2Fpassport%2F" className="inline-flex h-12 w-fit items-center rounded-full bg-stout px-6 font-semibold text-cream hover:bg-pub">
           Sign in or sign up
         </Link>
@@ -106,17 +119,22 @@ export default function PassportPage() {
   const fmt = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
   const emptySlots = Math.max(0, 18 - stamps.length)
   const next = PUB_BADGES.find((b) => b > TOTAL_PUBS) ?? 100
+  const HOODS = new Set(stamps.map((s) => s.hood).filter(Boolean)).size
+  const VERIFIED = stamps.filter((s) => s.verified).length
+  const PHOTOS = diary.filter((d) => d.photoUrl).length
+  const HELPFUL = diary.filter((d) => (d.note?.length ?? 0) >= 20 || d.tags.length >= 2).length
+  const DUBLIN = stamps.some((s) => s.city === "Dublin") ? 1 : 0
 
   return (
     <main className="flex flex-col">
-      <section className="bg-pub text-paper">
+      <section className="bg-cream text-stout">
         <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-8 px-4 py-10 md:flex-row md:items-end md:justify-between md:px-8 md:py-14">
           <div className="flex flex-col gap-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-paper/70">Guin Passport{name ? ` · ${name}` : ""}</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-pub">Guin Passport{name ? ` · ${name}` : ""}</p>
             <h1 className="font-display text-5xl font-semibold leading-[0.92] md:text-7xl">
               {TOTAL_PUBS} pubs stamped.
             </h1>
-            <p className="max-w-md text-base leading-relaxed text-paper/80 text-pretty">
+            <p className="max-w-md text-base leading-relaxed text-stout/70 text-pretty">
               {next - TOTAL_PUBS} more for the {next}-pub badge. Every pub you rate a pint in earns a stamp.
             </p>
           </div>
@@ -127,7 +145,7 @@ export default function PassportPage() {
               { label: "Countries", value: COUNTRIES_VISITED },
             ].map((s) => (
               <div key={s.label} className="flex flex-col">
-                <dt className="text-xs uppercase tracking-[0.14em] text-paper/70">{s.label}</dt>
+                <dt className="text-xs uppercase tracking-[0.14em] text-pub">{s.label}</dt>
                 <dd className="font-display text-5xl font-semibold tabular-nums">{s.value}</dd>
               </div>
             ))}
@@ -135,18 +153,48 @@ export default function PassportPage() {
         </div>
       </section>
 
-      <section className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-10 md:px-8 md:py-14">
-        <h2 className="font-display text-3xl font-semibold">Badges</h2>
-        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
-          {PUB_BADGES.map((t) => (
-            <Badge key={t} icon={Trophy} title={`${t} pubs`} current={TOTAL_PUBS} target={t} />
+      <nav aria-label="Passport" className="sticky top-16 z-10 border-b border-border bg-paper/95 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-[1440px] gap-1 overflow-x-auto px-4 md:px-8">
+          {TABS.map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => {
+                setTab(t)
+                history.replaceState(null, "", `#${t.toLowerCase()}`)
+              }}
+              aria-current={tab === t ? "page" : undefined}
+              className={cn(
+                "shrink-0 border-b-2 px-4 py-3.5 text-sm font-semibold transition-colors",
+                tab === t ? "border-pub text-foreground" : "border-transparent text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {t}
+            </button>
           ))}
-          <Badge icon={Building2} title="5 cities" current={CITIES_VISITED} target={5} />
-          <Badge icon={Flag} title="3 countries" current={COUNTRIES_VISITED} target={3} />
+        </div>
+      </nav>
+
+      {tab === "Badges" && (
+      <section className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-10 md:px-8 md:py-14">
+        <p className="max-w-2xl text-sm text-muted-foreground">Badges reward variety and helpful reviews, never how much you drink.</p>
+        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6">
+          <Badge icon={BadgeCheck} title="First verified pint" current={VERIFIED} target={1} />
+          {PUB_BADGES.map((t) => (
+            <Badge key={t} icon={Trophy} title={`${t} different pubs`} current={TOTAL_PUBS} target={t} />
+          ))}
+          <Badge icon={MapPinned} title="5 neighbourhoods" current={HOODS} target={5} />
+          <Badge icon={Compass} title="12 neighbourhoods" current={HOODS} target={12} />
+          <Badge icon={Camera} title="5 pint photos" current={PHOTOS} target={5} />
+          <Badge icon={MessageSquareText} title="10 helpful reviews" current={HELPFUL} target={10} />
+          <Badge icon={Building2} title="3 cities" current={CITIES_VISITED} target={3} />
+          <Badge icon={Flag} title="The Dublin pilgrimage" current={DUBLIN} target={1} />
         </ul>
       </section>
+      )}
 
-      <section className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 pb-16 md:px-8">
+      {tab === "Stamps" && (
+      <section className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-10 md:px-8 md:py-14">
         <div className="flex items-baseline justify-between gap-4 border-b-2 border-stout pb-3">
           <h2 className="font-display text-3xl font-semibold">Stamps</h2>
           <span className="text-sm text-muted-foreground">
@@ -174,6 +222,15 @@ export default function PassportPage() {
           ))}
         </ul>
       </section>
+      )}
+
+      {session && tab !== "Stamps" && tab !== "Badges" && (
+        <section className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-10 md:px-8 md:py-14">
+          {tab === "Diary" && <Diary userId={session.user.id} />}
+          {tab === "Lists" && <Lists userId={session.user.id} />}
+          {tab === "Friends" && <Friends userId={session.user.id} />}
+        </section>
+      )}
     </main>
   )
 }
