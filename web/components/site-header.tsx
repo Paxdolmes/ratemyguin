@@ -24,10 +24,10 @@ export function SiteHeader() {
     href === "/" ? pathname === "/" || pathname.startsWith("/pub") : pathname.startsWith(href)
 
   return (
-    <header className="sticky top-0 z-[1100] border-b border-border bg-paper/95 backdrop-blur supports-[backdrop-filter]:bg-paper/85">
+    <header className="sticky top-0 z-[1100] border-b border-cream/10 bg-stout text-cream">
       <div className="mx-auto flex h-16 max-w-[1440px] items-center gap-6 px-4 md:px-8">
-        <Link href="/" aria-label="ratemyguin home" className="shrink-0" onClick={() => setOpen(false)}>
-          <Logo />
+        <Link href="/" aria-label="ratemyGuin home" className="shrink-0" onClick={() => setOpen(false)}>
+          <Logo onDark />
         </Link>
 
         <nav aria-label="Main" className="hidden flex-1 items-center gap-1 md:flex">
@@ -37,8 +37,8 @@ export function SiteHeader() {
               href={item.href}
               aria-current={isActive(item.href) ? "page" : undefined}
               className={cn(
-                "rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground",
-                isActive(item.href) && "bg-cream text-foreground",
+                "rounded-full px-3 py-1.5 text-sm font-medium text-cream/70 transition-colors hover:text-cream",
+                isActive(item.href) && "bg-cream/10 text-pub-light",
               )}
             >
               {item.label}
@@ -51,18 +51,18 @@ export function SiteHeader() {
             <button
               type="button"
               onClick={() => void supabase.auth.signOut()}
-              className="hidden rounded-full px-3 py-1.5 text-sm font-medium text-foreground hover:bg-cream md:inline-flex"
+              className="hidden rounded-full px-3 py-1.5 text-sm font-medium text-cream hover:bg-cream/10 md:inline-flex"
             >
               Sign out
             </button>
           ) : (
-            <Link href="/sign-in/" className="hidden rounded-full px-3 py-1.5 text-sm font-medium text-foreground hover:bg-cream md:inline-flex">
+            <Link href="/sign-in/" className="hidden rounded-full px-3 py-1.5 text-sm font-medium text-cream hover:bg-cream/10 md:inline-flex">
               Sign in
             </Link>
           )}
           <Link
             href="/rate"
-            className="inline-flex h-10 items-center gap-1.5 rounded-full bg-pub px-4 text-sm font-semibold text-paper shadow-sm transition-colors hover:bg-stout"
+            className="inline-flex h-10 items-center gap-1.5 rounded-full bg-pub-light px-4 text-sm font-semibold text-stout shadow-sm transition-colors hover:bg-cream"
             onClick={() => setOpen(false)}
           >
             <Plus className="size-4" aria-hidden="true" />
@@ -70,7 +70,7 @@ export function SiteHeader() {
           </Link>
           <button
             type="button"
-            className="inline-flex size-10 items-center justify-center rounded-full text-foreground hover:bg-cream md:hidden"
+            className="inline-flex size-10 items-center justify-center rounded-full text-cream hover:bg-cream/10 md:hidden"
             aria-expanded={open}
             aria-controls="mobile-nav"
             onClick={() => setOpen((o) => !o)}
@@ -82,7 +82,7 @@ export function SiteHeader() {
       </div>
 
       {open && (
-        <nav id="mobile-nav" aria-label="Main" className="border-t border-border bg-paper px-4 pb-4 md:hidden">
+        <nav id="mobile-nav" aria-label="Main" className="border-t border-cream/10 bg-stout px-4 pb-4 md:hidden">
           <ul className="flex flex-col">
             {[...NAV, ...(session ? [] : [{ href: "/sign-in/", label: "Sign in" }])].map((item) => (
               <li key={item.href}>
@@ -91,8 +91,8 @@ export function SiteHeader() {
                   onClick={() => setOpen(false)}
                   aria-current={isActive(item.href) ? "page" : undefined}
                   className={cn(
-                    "flex border-b border-border py-3.5 font-display text-lg font-semibold",
-                    isActive(item.href) ? "text-pub" : "text-foreground",
+                    "flex border-b border-cream/10 py-3.5 font-display text-lg font-semibold",
+                    isActive(item.href) ? "text-pub-light" : "text-cream",
                   )}
                 >
                   {item.label}

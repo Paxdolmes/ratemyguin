@@ -45,7 +45,7 @@ function PubPage() {
         if (!live) return
         setPub(p)
         if (!p) return
-        document.title = `${p.name} · ratemyguin`
+        document.title = `${p.name} · ratemyGuin`
         const [r, pos, med] = await Promise.all([loadRatings(p.slug), cityPosition(p), cityMedianPrice(p.city)])
         if (!live) return
         setRatings(r)

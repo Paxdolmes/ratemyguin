@@ -25,6 +25,7 @@ export function TickMark({
         strokeWidth={onDark ? 1.5 : 0}
       />
       <path d="M4 3h24l-0.62 8H4.62L4 3Z" fill="var(--cream)" />
+      <path d="M4.62 11h22.76" stroke="var(--pub-light)" strokeWidth="1" />
       <path
         d="M10.5 22.5l4 4 7.5-8.5"
         fill="none"
@@ -39,9 +40,9 @@ export function TickMark({
 
 export function Wordmark({ className, onDark = false }: { className?: string; onDark?: boolean }) {
   return (
-    <span className={cn("font-display text-xl font-bold tracking-tight lowercase", className)}>
+    <span className={cn("font-display text-xl font-bold tracking-tight", className)}>
       <span className={onDark ? "text-cream" : "text-stout"}>ratemy</span>
-      <span className={onDark ? "text-pub-light" : "text-pub"}>guin</span>
+      <span className={onDark ? "text-pub-light" : "text-pub"}>Guin</span>
     </span>
   )
 }

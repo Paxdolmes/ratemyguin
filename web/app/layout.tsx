@@ -9,12 +9,12 @@ const figtree = Figtree({ subsets: ['latin'], variable: '--font-figtree' })
 
 export const metadata: Metadata = {
   title: {
-    default: 'ratemyguin — The best pint near you',
-    template: '%s · ratemyguin',
+    default: 'ratemyGuin — The best pint near you',
+    template: '%s · ratemyGuin',
   },
   description:
     'The independent league table of pubs ranked by how good their pint of Guinness is. Excellence Index scores, verified pint ratings and the Guin Passport.',
-  generator: 'v0.app',
+  icons: { icon: '/icon.svg', apple: '/apple-icon.png' },
 }
 
 export const viewport: Viewport = {

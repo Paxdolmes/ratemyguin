@@ -47,9 +47,9 @@
   --stout: #17110d;
   --cream: #f6eedc;
   --paper: #fbf8f1;
-  --pub: #1b5e45;
-  --pub-light: #5dbe96;
-  --brass: #d9a93f;
+  --pub: #8a6516; /* deep Guinness gold, readable on cream */
+  --pub-light: #d4a94a; /* bright gold, for use on black */
+  --brass: #d4a94a;
 
   --background: var(--paper);
   --foreground: var(--stout);
