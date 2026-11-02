@@ -188,22 +188,22 @@ export default function ScoringPage() {
       </section>
 
       <section className="mx-auto w-full max-w-[1440px] px-4 pb-16 md:px-8">
-        <div className="flex flex-col gap-8 rounded-3xl bg-stout p-6 text-cream md:p-10 lg:flex-row lg:items-center">
+        <div className="flex flex-col gap-8 rounded-3xl border border-pub/25 bg-cream p-6 text-stout md:p-10 lg:flex-row lg:items-center">
           <div className="flex shrink-0 items-center justify-center gap-3 sm:gap-5">
-            <AwardMedallion tier="highlyRecommended" variant="gilt" size={104} />
+            <AwardMedallion tier="highlyRecommended" variant="gold" size={104} />
             <AwardMedallion tier="exceptional" variant="gold" size={136} />
-            <AwardMedallion tier="goldStandard" variant="gilt" size={104} />
+            <AwardMedallion tier="goldStandard" variant="gold" size={104} />
           </div>
           <div className="flex flex-1 flex-col gap-2">
             <h2 className="font-display text-3xl font-semibold md:text-4xl">The ratemyGuin Awards</h2>
-            <p className="max-w-2xl text-sm leading-relaxed text-pretty text-cream/75">
+            <p className="max-w-2xl text-sm leading-relaxed text-pretty text-stout/75">
               Once a pub has 10 or more ratings, its band becomes an award: Exceptional, Gold Standard or Highly Recommended.
               Pubs can&apos;t enter, nominate or pay. The awards are independent and not official Guinness recognition.
             </p>
           </div>
           <Link
             href="/"
-            className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-pub-light px-5 font-semibold text-stout hover:bg-cream"
+            className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-stout px-5 font-semibold text-cream hover:bg-pub"
           >
             See the rankings
           </Link>

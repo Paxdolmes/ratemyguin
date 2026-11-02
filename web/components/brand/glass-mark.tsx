@@ -1,17 +1,16 @@
 import { BRAND } from './tokens'
 
 /*
- * Tulip stout glass, drawn on a 40 × 64 grid (centre line x = 20).
- * Rim half-width 10.5 at y=4 → bulge half-width 13.5 at y=24 (two-thirds up) →
- * narrow heel half-width 7.4 at y=55, with a thick glass base below.
+ * Tulip stout glass on a 40 x 64 grid (centre x = 20), proportioned like a real
+ * imperial stout pint: rim 29 wide, a slight neck under the head, the bulge a third
+ * of the way down, tapering to a 21-wide heavy base.
  */
 const GLASS_BODY =
-  'M9.5 4 C8.7 10 6.5 16 6.5 24 C6.5 34 11.6 45 12.6 55 L12.6 59.4 Q12.6 60.5 13.7 60.5 H26.3 Q27.4 60.5 27.4 59.4 L27.4 55 C28.4 45 33.5 34 33.5 24 C33.5 16 31.3 10 30.5 4 Z'
-const GLASS_OUTLINE =
-  'M9.5 4 C8.7 10 6.5 16 6.5 24 C6.5 34 11.6 45 12.6 55 L12.6 59.4 Q12.6 60.5 13.7 60.5 H26.3 Q27.4 60.5 27.4 59.4 L27.4 55 C28.4 45 33.5 34 33.5 24 C33.5 16 31.3 10 30.5 4'
-const HEAD = 'M9.5 4 Q20 0.9 30.5 4 C30.9 6.2 31.25 8.3 31.6 10.5 Q20 11.4 8.4 10.5 C8.75 8.3 9.1 6.2 9.5 4 Z'
-const BASE_LINE = 'M12.6 55 H27.4'
-const REFLECTION = 'M10 15.5 C9.4 25 11.2 37 13.6 49'
+  'M5.6 3 H34.4 C34.3 5.5 33.9 6.5 33.9 9 C33.9 12 35.2 16 35.2 21 C35.2 32 31.0 48 30.4 57 L30.4 59.4 Q30.4 61 28.799999999999997 61 H11.2 Q9.6 61 9.6 59.4 L9.6 57 C9.0 48 4.800000000000001 32 4.800000000000001 21 C4.800000000000001 16 6.1 12 6.1 9 C6.1 6.5 5.699999999999999 5.5 5.6 3 Z'
+const GLASS_OUTLINE = GLASS_BODY
+const HEAD = 'M5.6 3 H34.4 C34.3 5.5 33.9 6.5 33.9 9 L33.95 10.5 Q20 11.3 6.05 10.5 L6.1 9 C6.1 6.5 5.7 5.5 5.6 3 Z'
+const BASE_LINE = 'M9.6 57 H30.4'
+const REFLECTION = 'M8.4 14 C7.8 24 9.6 40 11.4 52'
 
 export type GlassTone = 'onDark' | 'onLight' | 'gilt' | 'ink'
 

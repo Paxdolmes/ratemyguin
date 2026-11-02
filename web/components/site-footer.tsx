@@ -9,7 +9,7 @@ export function SiteFooter() {
         <div className="flex max-w-md flex-col gap-3">
           <Logo tone="onDark" size="sm" />
           <p className="text-sm leading-relaxed text-cream/70">
-            An independent, community-run guide to the pint. ratemyGuin is not affiliated with, endorsed or
+            Rating London&apos;s pints, and beyond. An independent, community-run guide to the pint. ratemyGuin is not affiliated with, endorsed or
             sponsored by Guinness or Diageo. No pub can pay for a place in the table.
           </p>
         </div>

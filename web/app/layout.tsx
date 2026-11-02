@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     template: '%s · ratemyGuin',
   },
   description:
-    'The independent league table of pubs ranked by how good their pint of Guinness is. Excellence Index scores, verified pint ratings and the Guin Passport.',
+    'Rating London\'s pints, and beyond. The independent league table of pubs ranked by how good their pint of Guinness is. Excellence Index scores, verified pint ratings and the Guin Passport.',
   icons: { icon: '/icon.svg', apple: '/apple-icon.png' },
 }
 
