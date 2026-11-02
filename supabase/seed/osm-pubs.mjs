@@ -1,0 +1,55 @@
+// Loads pubs from OpenStreetMap into the live database through the Supabase
+// Management API. Usage: SUPABASE_ACCESS_TOKEN=… PROJECT_REF=… node osm-pubs.mjs london
+// Data © OpenStreetMap contributors, ODbL.
+
+const AREAS = {
+  // south, west, north, east
+  london: { bbox: [51.28, -0.51, 51.70, 0.33], city: 'London', country: 'United Kingdom' },
+  dublin: { bbox: [53.22, -6.45, 53.43, -6.04], city: 'Dublin', country: 'Ireland' },
+  manchester: { bbox: [53.39, -2.35, 53.55, -2.12], city: 'Manchester', country: 'United Kingdom' },
+};
+
+const areaKey = process.argv[2] ?? 'london';
+const area = AREAS[areaKey];
+if (!area) throw new Error(`Unknown area ${areaKey}`);
+const { SUPABASE_ACCESS_TOKEN: token, PROJECT_REF: ref } = process.env;
+if (!token || !ref) throw new Error('Set SUPABASE_ACCESS_TOKEN and PROJECT_REF');
+
+const [s, w, n, e] = area.bbox;
+const query = `[out:json][timeout:180];(node["amenity"="pub"](${s},${w},${n},${e});way["amenity"="pub"](${s},${w},${n},${e}););out center tags;`;
+const res = await fetch('https://overpass-api.de/api/interpreter', {
+  method: 'POST',
+  headers: { 'content-type': 'application/x-www-form-urlencoded', 'user-agent': 'ratemyguin-seed/1.0' },
+  body: new URLSearchParams({ data: query }),
+});
+if (!res.ok) throw new Error(`Overpass ${res.status}: ${await res.text()}`);
+const { elements } = await res.json();
+
+const q = (v) => (v == null || v === '' ? 'null' : `'${String(v).replace(/'/g, "''")}'`);
+const rows = [];
+for (const el of elements) {
+  const t = el.tags ?? {};
+  const lat = el.lat ?? el.center?.lat;
+  const lon = el.lon ?? el.center?.lon;
+  if (!t.name || lat == null || lon == null) continue;
+  const street = [t['addr:housenumber'], t['addr:street']].filter(Boolean).join(' ');
+  const address = street || t['addr:place'] || t['addr:postcode'] || area.city;
+  const hood = t['addr:suburb'] || t['addr:district'] || t['addr:neighbourhood'] || null;
+  rows.push(`(${q(t.name)}, ${q(address)}, ${q(hood)}, ${q(area.city)}, ${q(area.country)}, 'SRID=4326;POINT(${lon} ${lat})', ${q(`${el.type}/${el.id}`)}, ${q(t.opening_hours)})`);
+}
+console.log(`${rows.length} named pubs found in ${area.city}`);
+
+for (let i = 0; i < rows.length; i += 500) {
+  const sql = `insert into public.pubs (name, address, neighbourhood, city, country, location, osm_id, opening_hours) values
+${rows.slice(i, i + 500).join(',\n')}
+on conflict (osm_id) do update set name = excluded.name, address = excluded.address,
+  neighbourhood = coalesce(excluded.neighbourhood, pubs.neighbourhood), location = excluded.location,
+  opening_hours = coalesce(pubs.opening_hours, excluded.opening_hours);`;
+  const r = await fetch(`https://api.supabase.com/v1/projects/${ref}/database/query`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+    body: JSON.stringify({ query: sql }),
+  });
+  if (!r.ok) throw new Error(`Supabase ${r.status}: ${await r.text()}`);
+  console.log(`Loaded ${Math.min(i + 500, rows.length)} of ${rows.length}`);
+}

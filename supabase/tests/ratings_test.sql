@@ -62,7 +62,7 @@ do $$ begin
   assert (select count(*) from public.ratings) = 1, 'raw ratings are private';
   assert (select verification from public.ratings) = 'none', 'from home is unverified';
   assert (select weight from public.ratings) < 0.6, 'unverified counts less';
-  assert (select count(*) from public.public_ratings) = 2, 'public view shows both';
+  assert (select count(*) from public.public_ratings where pub_id = '00000000-0000-0000-0000-000000000b01') = 2, 'public view shows both';
 end $$;
 
 -- Cal is brand new and teleports: Fulham to Dublin in minutes is refused.

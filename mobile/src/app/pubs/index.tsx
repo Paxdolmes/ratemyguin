@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, TextInput, View } from 'react-native';
 import Svg, { Circle, Polyline } from 'react-native-svg';
@@ -7,15 +8,40 @@ import { Lockup } from '@/components/brand';
 import { AwardChip, Body, Button, Card, H1, H2, Initials, ScoreBar, Small } from '@/components/ui';
 import { Fonts, usePalette } from '@/constants/theme';
 import { AWARD_DISCLAIMER, AWARDS, excellenceIndex, INDEX_WEIGHTS } from '@/domain/scores';
-import { MY_PUB_ID, PEOPLE } from '@/lib/demo';
+import { useAuth } from '@/lib/auth';
 import { useStore } from '@/lib/store';
 
 // RateMyGuin for Pubs: the landlord's view of their own pub.
 export default function PubDashboard() {
   const c = usePalette();
   const insets = useSafeAreaInsets();
+  const { status } = useAuth();
+  const { pub, myPubId, live } = useStore();
+  const p = myPubId ? pub(myPubId) : undefined;
+
+  if (!p) {
+    const signedIn = !live || status === 'ready';
+    return (
+      <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top + 12, padding: 20, gap: 14 }}>
+        <Lockup pubs size={20} />
+        <H1>{signedIn ? 'Claim your pub' : 'Sign in to see your pub'}</H1>
+        <Body muted>
+          {signedIn
+            ? 'Your account isn\'t linked to a pub yet. Ask the RateMyGuin team to link it. Claiming your pub from the app is coming next.'
+            : 'See your Excellence Index, what drinkers say about your pour, and reply to reviews.'}
+        </Body>
+        {signedIn ? null : <Button label="Sign in" onPress={() => router.push('/sign-in')} />}
+      </View>
+    );
+  }
+  return <Dashboard pubId={p.id} />;
+}
+
+function Dashboard({ pubId }: { pubId: string }) {
+  const c = usePalette();
+  const insets = useSafeAreaInsets();
   const { pub, pubs, ratingsFor, replyTo } = useStore();
-  const p = pub(MY_PUB_ID)!;
+  const p = pub(pubId)!;
   const s = p.score;
   const ratings = ratingsFor(p.id);
 
@@ -126,16 +152,17 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Reply({ rating, onReply }: { rating: { id: string; userId: string; overall: number; note: string; pour: number }; onReply: (t: string) => void }) {
+function Reply({ rating, onReply }: { rating: { id: string; overall: number; note: string; authorName?: string | null }; onReply: (t: string) => Promise<void> }) {
   const c = usePalette();
   const [text, setText] = useState('');
-  const who = PEOPLE.find((p) => p.id === rating.userId);
+  const [error, setError] = useState<string | null>(null);
+  const who = { name: rating.authorName ?? 'Guest' };
   return (
     <Card style={{ gap: 10 }}>
       <H2>Latest review</H2>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-        <Initials name={who?.name ?? 'Guest'} size={34} />
-        <Body style={{ flex: 1, fontFamily: 'Figtree_700Bold' }}>{who?.name ?? 'Guest'}</Body>
+        <Initials name={who.name} size={34} />
+        <Body style={{ flex: 1, fontFamily: 'Figtree_700Bold' }}>{who.name}</Body>
         <H2>{rating.overall.toFixed(1)}</H2>
       </View>
       <Body>{rating.note}</Body>
@@ -146,7 +173,16 @@ function Reply({ rating, onReply }: { rating: { id: string; userId: string; over
         placeholderTextColor={c.inkSubtle}
         style={{ fontFamily: Fonts.body, fontSize: 15, color: c.ink, backgroundColor: c.surfaceMuted, borderRadius: 12, padding: 12 }}
       />
-      <Button label="Post reply" disabled={!text.trim()} onPress={() => { onReply(text.trim()); setText(''); }} />
+      {error ? <Small style={{ color: c.danger }}>{error}</Small> : null}
+      <Button
+        label="Post reply"
+        disabled={!text.trim()}
+        onPress={() => {
+          onReply(text.trim())
+            .then(() => setText(''))
+            .catch((e: Error) => setError(e.message));
+        }}
+      />
     </Card>
   );
 }
