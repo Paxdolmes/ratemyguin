@@ -1,6 +1,8 @@
 name: Deploy web app
 
-# Publishes the drinkers app as a website on Expo Hosting (EAS). Needs the EXPO_TOKEN secret.
+# Publishes the drinkers app as the website on ratemyguin.com (Cloudflare Pages), using the
+# CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets. Also keeps the Expo Hosting copy
+# at ratemyguin.expo.app (EXPO_TOKEN secret).
 
 on:
   push:
@@ -20,6 +22,8 @@ jobs:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       EXPO_PUBLIC_SUPABASE_URL: https://yhttayboxljswczexspg.supabase.co
       EXPO_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_8aeFY-i4xdQPbQ7kA_BRjA_WfoJR18a
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -30,7 +34,29 @@ jobs:
       - run: npm ci
       - run: npx expo export --platform web
       - name: Publish
+        if: env.EXPO_TOKEN != ''
         run: npx --yes eas-cli@latest deploy --prod --non-interactive --alias ratemyguin 2>&1 | tee deploy.log || npx --yes eas-cli@latest deploy --prod --non-interactive 2>&1 | tee deploy.log
+      - name: Publish on ratemyguin.com
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        run: |
+          npx --yes wrangler@3 pages project create ratemyguin --production-branch main 2>&1 | tail -2 || true
+          npx --yes wrangler@3 pages deploy dist --project-name ratemyguin --branch main --commit-dirty=true 2>&1 | tail -4
+          api=https://api.cloudflare.com/client/v4
+          auth=(-H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json")
+          for d in ratemyguin.com www.ratemyguin.com; do
+            curl -sS -X POST "${auth[@]}" "$api/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/ratemyguin/domains" -d "{\"name\":\"$d\"}" | jq -c '{success, errors: [.errors[]?.message], status: .result.status}'
+          done
+          zone=$(curl -sS "${auth[@]}" "$api/zones?name=ratemyguin.com" | jq -r '.result[0].id // empty')
+          if [ -z "$zone" ]; then echo "::warning::Couldn't see the ratemyguin.com zone; add CNAME records to ratemyguin.pages.dev by hand."; exit 0; fi
+          for n in ratemyguin.com www; do
+            existing=$(curl -sS "${auth[@]}" "$api/zones/$zone/dns_records?type=CNAME&name=$( [ $n = www ] && echo www.ratemyguin.com || echo ratemyguin.com )" | jq -r '.result[0].id // empty')
+            if [ -z "$existing" ]; then
+              curl -sS -X POST "${auth[@]}" "$api/zones/$zone/dns_records" -d "{\"type\":\"CNAME\",\"name\":\"$n\",\"content\":\"ratemyguin.pages.dev\",\"proxied\":true}" | jq -c '{success, errors: [.errors[]?.message]}'
+            fi
+          done
+          for d in ratemyguin.com www.ratemyguin.com; do
+            curl -sS "${auth[@]}" "$api/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/ratemyguin/domains/$d" | jq -c '{domain: .result.name, status: .result.status, validation: .result.validation_data.status}'
+          done
       - name: Screenshot the live site
         working-directory: .
         run: |
