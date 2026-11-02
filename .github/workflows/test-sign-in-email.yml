@@ -1,0 +1,27 @@
+name: Send a test sign-in code
+
+# Asks Supabase to email a sign-in code, to check the email sender works end to end.
+
+on:
+  workflow_dispatch:
+    inputs:
+      email:
+        description: Address to send the code to
+        required: true
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request a code
+        env:
+          EMAIL: ${{ inputs.email }}
+          URL: https://yhttayboxljswczexspg.supabase.co
+          KEY: sb_publishable_8aeFY-i4xdQPbQ7kA_BRjA_WfoJR18a
+        run: |
+          status=$(curl -sS -o response.json -w '%{http_code}' -X POST "$URL/auth/v1/otp" \
+            -H "apikey: $KEY" -H "Content-Type: application/json" \
+            -d "$(jq -n --arg e "$EMAIL" '{email: $e, create_user: true}')")
+          cat response.json; echo
+          if [ "$status" -ge 300 ]; then echo "::error::Supabase refused to send ($status)"; exit 1; fi
+          echo "Code sent"
