@@ -7,10 +7,10 @@ if (!token || !ref) throw new Error('Set SUPABASE_ACCESS_TOKEN and PROJECT_REF')
 
 const [s, w, n, e] = [51.28, -0.51, 51.70, 0.33];
 const query = `[out:json][timeout:180];(
-  node["railway"="station"](${s},${w},${n},${e});
-  node["railway"="halt"](${s},${w},${n},${e});
+  nwr["railway"="station"](${s},${w},${n},${e});
+  nwr["railway"="halt"](${s},${w},${n},${e});
   node["railway"="tram_stop"]["network"~"Tramlink"](${s},${w},${n},${e});
-);out tags;`;
+);out center tags;`;
 const SERVERS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter', 'https://overpass.private.coffee/api/interpreter'];
 let res, last;
 for (let attempt = 0; attempt < 6 && !res; attempt++) {
@@ -37,9 +37,19 @@ const kindOf = (t) => {
   return 'rail';
 };
 const q = (v) => (v == null || v === '' ? 'null' : `'${String(v).replace(/'/g, "''")}'`);
-const rows = elements
-  .filter((el) => el.tags?.name && el.lat != null)
-  .map((el) => `(${q(el.tags.name.replace(/ (Underground|Rail|DLR) Station$/i, '').replace(/ Station$/i, ''))}, ${q(kindOf(el.tags))}, 'SRID=4326;POINT(${el.lon} ${el.lat})', ${q(`node/${el.id}`)})`);
+// A station is often mapped twice (a point and an outline), so keep one per name and line type.
+const seen = new Set();
+const rows = [];
+for (const el of [...elements].sort((a, b) => (a.type === 'node' ? 0 : 1) - (b.type === 'node' ? 0 : 1))) {
+  const lat = el.lat ?? el.center?.lat;
+  const lon = el.lon ?? el.center?.lon;
+  if (!el.tags?.name || lat == null || lon == null) continue;
+  const name = el.tags.name.replace(/ (Underground|Rail|DLR) Station$/i, '').replace(/ Station$/i, '');
+  const kind = kindOf(el.tags);
+  if (seen.has(`${name}|${kind}`)) continue;
+  seen.add(`${name}|${kind}`);
+  rows.push(`(${q(name)}, ${q(kind)}, 'SRID=4326;POINT(${lon} ${lat})', ${q(`${el.type}/${el.id}`)})`);
+}
 console.log(`${rows.length} stations found`);
 
 for (let i = 0; i < rows.length; i += 500) {

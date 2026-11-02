@@ -5,7 +5,7 @@ import "react-leaflet-cluster/dist/assets/MarkerCluster.css"
 import L from "leaflet"
 import Link from "next/link"
 import { useEffect, useMemo, useRef } from "react"
-import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet"
+import { CircleMarker, MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet"
 import MarkerClusterGroup from "react-leaflet-cluster"
 import { BAND_LABEL, bandFor, excellenceIndex, formatPrice, pubHref, type Pub } from "@/lib/pubs"
 
@@ -17,6 +17,8 @@ export type PubMapProps = {
   activeSlug?: string | null
   onSelect?: (slug: string) => void
   userLocation?: { lat: number; lng: number } | null
+  /** Highlights one spot, such as the pub on its own page. */
+  focus?: [number, number] | null
 }
 
 function pinIcon(score: number, active: boolean) {
@@ -104,7 +106,7 @@ function SizeWatcher() {
   return null
 }
 
-export default function PubMap({ pubs, unrated, center, zoom, activeSlug, onSelect, userLocation }: PubMapProps) {
+export default function PubMap({ pubs, unrated, center, zoom, activeSlug, onSelect, userLocation, focus }: PubMapProps) {
   const rated = useMemo(
     () =>
       pubs
@@ -129,6 +131,13 @@ export default function PubMap({ pubs, unrated, center, zoom, activeSlug, onSele
         maxZoom={19}
       />
       <UnratedLayer points={unrated} onSelect={onSelect} />
+      {focus && (
+        <CircleMarker
+          center={focus}
+          radius={11}
+          pathOptions={{ color: "#17110D", weight: 3, fillColor: "#D4A94A", fillOpacity: 1 }}
+        />
+      )}
       <MarkerClusterGroup
         chunkedLoading
         showCoverageOnHover={false}
