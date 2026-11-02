@@ -12,6 +12,9 @@ on:
 
 concurrency: deploy-web
 
+permissions:
+  contents: write # to save the screenshots to the site-screenshots branch
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -59,6 +62,8 @@ jobs:
           done
       - name: Screenshot the live site
         working-directory: .
+        env:
+          SITE: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && 'https://ratemyguin.pages.dev' || 'https://ratemyguin.expo.app' }}
         run: |
           npm i --no-save --prefix /tmp/shots playwright@1 >/dev/null 2>&1
           npx --prefix /tmp/shots playwright install --with-deps chromium >/dev/null 2>&1
@@ -71,7 +76,7 @@ jobs:
               const ctx = await b.newContext({ viewport, deviceScaleFactor: 1, geolocation: { latitude: 51.4787, longitude: -0.1957 }, permissions: ['geolocation'] });
               const p = await ctx.newPage();
               for (const path of ['/', '/leaderboards', '/passport']) {
-                await p.goto('https://ratemyguin.expo.app' + path, { waitUntil: 'networkidle' });
+                await p.goto((process.env.SITE || 'https://ratemyguin.expo.app') + path, { waitUntil: 'networkidle' });
                 await p.waitForTimeout(4000);
                 await p.screenshot({ path: `shots/${name}${path.replace(/\//g, '_')}.png`, fullPage: true });
               }
@@ -81,7 +86,11 @@ jobs:
           })();
           JS
           mkdir -p shots && node /tmp/shots/shot.cjs
-      - uses: actions/upload-artifact@v4
-        with:
-          name: screenshots
-          path: shots/
+      - name: Save the screenshots to the site-screenshots branch
+        working-directory: .
+        run: |
+          cd shots
+          git init -q -b site-screenshots
+          git config user.name "github-actions" && git config user.email "actions@github.com"
+          git add -A && git commit -qm "Screenshots of ${{ github.sha }}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" site-screenshots
