@@ -59,10 +59,15 @@ export function PubMap({ pubs, here, height = 320, onPick }: Props) {
       const el = box.current as unknown as HTMLElement | null;
       if (cancelled || !el || map.current) return;
       const m = L.map(el, { zoomControl: true, attributionControl: true, scrollWheelZoom: false }).setView([here.lat, here.lng], 14);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
+        className: 'rmg-tiles',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       }).addTo(m);
+      // Calm the standard map colours down to the paper-and-stout palette.
+      const st = document.createElement('style');
+      st.textContent = '.rmg-tiles{filter:grayscale(.85) sepia(.25) brightness(1.04) contrast(.92)}';
+      document.head.appendChild(st);
       const layer = L.markerClusterGroup({
         showCoverageOnHover: false,
         maxClusterRadius: 48,

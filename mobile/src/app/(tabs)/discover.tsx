@@ -68,11 +68,18 @@ export default function Discover() {
   const table = (
     <View style={{ gap: 10 }}>
       <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
-        <H2>{sort === 'best' ? 'Rankings' : sort === 'near' ? 'Nearest pubs' : 'Cheapest pints'}</H2>
+        <H2>{rated === 0 ? 'Pubs to rate' : sort === 'best' ? 'Rankings' : sort === 'near' ? 'Nearest pubs' : 'Cheapest pints'}</H2>
         <Small>
           {list.length} pubs · {rated} rated
         </Small>
       </View>
+      {rated === 0 && list.length > 0 ? (
+        <View style={{ backgroundColor: c.stout, borderRadius: 20, padding: 18, gap: 10 }}>
+          <Body style={{ color: c.cream, fontFamily: 'BricolageGrotesque_700Bold', fontSize: 20 }}>No pints rated around here yet</Body>
+          <Body style={{ color: c.cream, opacity: 0.8 }}>Rate the first Guinness and put your local at the top of the table. Pubs need 3 ratings to get an Excellence Index.</Body>
+          <Button label="Rate a pint" onPress={() => router.push('/rate')} />
+        </View>
+      ) : null}
       {list.slice(0, shown).map((p, i) => (
         <PubRow key={p.id} pub={p} rank={sort === 'best' && p.score.index != null ? i + 1 : null} />
       ))}
