@@ -1,13 +1,12 @@
 name: Deploy web app
 
-# Publishes the drinkers app as the website on ratemyguin.com (Cloudflare Pages), using the
-# CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets. Also keeps the Expo Hosting copy
-# at ratemyguin.expo.app (EXPO_TOKEN secret).
+# Publishes the website in web/ (a static Next.js site on the live database) to ratemyguin.com
+# on Cloudflare Pages, using the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets.
 
 on:
   push:
     branches: [main, expo-test-build] # expo-test-build is temporary, for trying it before merging
-    paths: ['mobile/**', '.github/workflows/deploy-web.yml']
+    paths: ['web/**', '.github/workflows/deploy-web.yml']
   workflow_dispatch:
 
 concurrency: deploy-web
@@ -20,11 +19,8 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: mobile
+        working-directory: web
     env:
-      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
-      EXPO_PUBLIC_SUPABASE_URL: https://yhttayboxljswczexspg.supabase.co
-      EXPO_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_8aeFY-i4xdQPbQ7kA_BRjA_WfoJR18a
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
@@ -33,24 +29,15 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: mobile/package-lock.json
+          cache-dependency-path: web/package-lock.json
       - run: npm ci
       - name: Build the website
-        run: |
-          npx expo export --platform web
-          # Cloudflare Pages skips folders called node_modules, which is where Expo puts fonts and icons.
-          if [ -d dist/assets/node_modules ]; then
-            mv dist/assets/node_modules dist/assets/pkg
-            grep -rl 'assets/node_modules/' dist --include='*.js' --include='*.html' --include='*.css' | xargs -r sed -i 's#assets/node_modules/#assets/pkg/#g'
-          fi
-      - name: Publish
-        if: env.EXPO_TOKEN != ''
-        run: npx --yes eas-cli@latest deploy --prod --non-interactive --alias ratemyguin 2>&1 | tee deploy.log || npx --yes eas-cli@latest deploy --prod --non-interactive 2>&1 | tee deploy.log
+        run: npx next build
       - name: Publish on ratemyguin.com
         if: env.CLOUDFLARE_API_TOKEN != ''
         run: |
           npx --yes wrangler@3 pages project create ratemyguin --production-branch main 2>&1 | tail -2 || true
-          npx --yes wrangler@3 pages deploy dist --project-name ratemyguin --branch main --commit-dirty=true 2>&1 | tail -4
+          npx --yes wrangler@3 pages deploy out --project-name ratemyguin --branch main --commit-dirty=true 2>&1 | tail -4
           api=https://api.cloudflare.com/client/v4
           auth=(-H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json")
           for d in ratemyguin.com www.ratemyguin.com; do
@@ -70,10 +57,11 @@ jobs:
       - name: Screenshot the live site
         working-directory: .
         env:
-          SITE: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && 'https://ratemyguin.pages.dev' || 'https://ratemyguin.expo.app' }}
+          SITE: https://ratemyguin.pages.dev
         run: |
           npm i --no-save --prefix /tmp/shots playwright@1 >/dev/null 2>&1
           npx --prefix /tmp/shots playwright install --with-deps chromium >/dev/null 2>&1
+          sleep 20
           cat > /tmp/shots/shot.cjs <<'JS'
           const { chromium } = require('/tmp/shots/node_modules/playwright');
           (async () => {
@@ -82,10 +70,17 @@ jobs:
             for (const [name, viewport] of Object.entries(sizes)) {
               const ctx = await b.newContext({ viewport, deviceScaleFactor: 1, geolocation: { latitude: 51.4787, longitude: -0.1957 }, permissions: ['geolocation'] });
               const p = await ctx.newPage();
-              for (const path of ['/', '/leaderboards', '/passport']) {
-                await p.goto((process.env.SITE || 'https://ratemyguin.expo.app') + path, { waitUntil: 'networkidle' });
-                await p.waitForTimeout(4000);
-                await p.screenshot({ path: `shots/${name}${path.replace(/\//g, '_')}.png`, fullPage: true });
+              p.on('console', (m) => m.type() === 'error' && console.log(name, 'console:', m.text()));
+              let pubLink = null;
+              for (const path of ['/', '/map/', '/scoring/', '/rate/', '/passport/', '/sign-in/', 'PUB']) {
+                const url = path === 'PUB' ? pubLink : process.env.SITE + path;
+                if (!url) continue;
+                await p.goto(url, { waitUntil: 'networkidle' }).catch((e) => console.log(e.message));
+                await p.waitForTimeout(5000);
+                if (path === '/') pubLink = await p.$eval('a[href^="/pub/?id="]', (a) => a.href).catch(() => null);
+                const file = path === 'PUB' ? 'pub' : path.replace(/\//g, '_') || 'home';
+                await p.screenshot({ path: `shots/${name}_${file}.png`, fullPage: name === 'phone' ? false : false });
+                await p.screenshot({ path: `shots/${name}_${file}_full.png`, fullPage: true });
               }
               await ctx.close();
             }
