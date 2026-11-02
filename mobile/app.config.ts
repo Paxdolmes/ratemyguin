@@ -26,6 +26,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: v.name,
   slug: v.slug,
+  owner: 'ratemyguin',
   scheme: v.scheme,
   version: '0.1.0',
   orientation: 'portrait',

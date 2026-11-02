@@ -1,0 +1,64 @@
+name: Build test app
+
+# Builds an installable test app on Expo (EAS). Needs the EXPO_TOKEN repository secret.
+# Android gives an .apk download link; iPhone needs an Apple Developer account.
+
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: Which app
+        type: choice
+        options: [drinkers, pubs]
+        default: drinkers
+      platform:
+        description: Phone type
+        type: choice
+        options: [android, ios]
+        default: android
+  push:
+    branches: [expo-test-build] # temporary, so the setup can be tested before merging
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      APP_VARIANT: ${{ inputs.app || 'drinkers' }}
+      PLATFORM: ${{ inputs.platform || 'android' }}
+    steps:
+      - name: Check the Expo token is set
+        working-directory: .
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::Add an EXPO_TOKEN repository secret (expo.dev > Settings > Access tokens)."
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci
+      - name: Who am I on Expo
+        run: npx --yes eas-cli@latest whoami
+      - name: Link the Expo project if it isn't yet
+        run: |
+          if ! node -e "const c=require('@expo/config').getConfig('.',{skipSDKVersionRequirement:true}).exp; process.exit(c.extra?.eas?.projectId?0:1)"; then
+            npx --yes eas-cli@latest init --non-interactive --force || true
+            npx --yes eas-cli@latest project:info || true
+            echo "::error::Expo project for $APP_VARIANT isn't linked in app.config.ts yet. Copy the project ID printed above into it."
+            exit 1
+          fi
+      - name: Build
+        run: |
+          profile=preview
+          [ "$APP_VARIANT" = pubs ] && profile=preview-pubs
+          npx --yes eas-cli@latest build --platform "$PLATFORM" --profile "$profile" --non-interactive --no-wait --json > build.json
+          cat build.json
+          url=$(jq -r '.[0].id as $id | "https://expo.dev/accounts/\(.[0].project.ownerAccount.name // "")/projects/\(.[0].project.slug // "")/builds/\($id)"' build.json 2>/dev/null || true)
+          echo "Build started: $url"
