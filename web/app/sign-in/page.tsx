@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation"
 import { Suspense, useEffect, useState } from "react"
-import { TickMark } from "@/components/brand/logo"
+import { GlassMark } from "@/components/brand/glass-mark"
 import { myProfile, supabase, useSession } from "@/lib/live"
 
 const field = "h-12 rounded-xl border border-border bg-paper px-4 focus-visible:outline-2 focus-visible:outline-pub"
@@ -42,8 +42,8 @@ function SignIn() {
   return (
     <main className="mx-auto flex w-full max-w-md flex-col gap-8 px-4 py-14 md:py-20">
       <div className="flex flex-col items-center gap-4 text-center">
-        <TickMark className="h-14 w-auto" />
-        <h1 className="font-display text-4xl font-extrabold tracking-tight">
+        <GlassMark size={64} tone="onLight" title="" />
+        <h1 className="font-display text-4xl font-semibold">
           {step === "profile" ? "Pick your handle" : step === "code" ? "Check your email" : "Sign in or sign up"}
         </h1>
         <p className="text-sm leading-relaxed text-muted-foreground">
@@ -149,7 +149,7 @@ function SignIn() {
           {error}
         </p>
       )}
-      <p className="text-center text-xs text-muted-foreground">You must be 18 or over to use RateMyGuin.</p>
+      <p className="text-center text-xs text-muted-foreground">You must be 18 or over to use ratemyGuin.</p>
     </main>
   )
 }

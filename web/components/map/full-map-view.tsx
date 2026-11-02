@@ -30,7 +30,7 @@ export function FullMapView() {
 
       <div className="pointer-events-none absolute inset-x-0 top-0 z-[500] flex p-4 md:p-6">
         <div className="pointer-events-auto flex flex-col gap-1 rounded-2xl bg-paper/95 px-4 py-3 shadow-sm ring-1 ring-border backdrop-blur">
-          <h1 className="font-display text-xl font-extrabold tracking-tight">The pint map</h1>
+          <h1 className="font-display text-xl font-semibold">The pint map</h1>
           <p className="text-xs text-muted-foreground">
             {loading ? "Loading pubs…" : `${RATED.length} rated pubs · ${unrated.length.toLocaleString("en-GB")} in London waiting for a score`}
           </p>
@@ -44,7 +44,7 @@ export function FullMapView() {
               <PubBadge pub={active} size={48} />
               <div className="flex flex-1 flex-col gap-0.5">
                 <span className="text-xs text-cream/60">{active.area}</span>
-                <h2 className="font-display text-2xl font-extrabold leading-tight">{active.name}</h2>
+                <h2 className="font-display text-2xl font-semibold leading-tight">{active.name}</h2>
               </div>
               <button
                 type="button"
@@ -57,7 +57,7 @@ export function FullMapView() {
             </div>
             {score != null ? (
               <div className="flex items-center gap-3">
-                <span className="font-display text-4xl font-extrabold tabular-nums">{score}</span>
+                <span className="font-display text-4xl font-semibold tabular-nums">{score}</span>
                 <BandChip band={bandFor(score)} onDark />
                 <span className="ml-auto text-sm text-cream/70 tabular-nums">{formatPrice(active)}</span>
               </div>

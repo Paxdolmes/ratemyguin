@@ -148,7 +148,7 @@ export function RateForm({ initialSlug }: { initialSlug?: string }) {
   if (ready && !session) {
     return (
       <div className="flex max-w-xl flex-col gap-4 rounded-3xl bg-cream p-6 md:p-8">
-        <h2 className="font-display text-3xl font-extrabold tracking-tight">Sign in to rate a pint</h2>
+        <h2 className="font-display text-3xl font-semibold">Sign in to rate a pint</h2>
         <p className="text-muted-foreground">We&apos;ll email you a code. No password, and it takes about 30 seconds.</p>
         <Link
           href={`/sign-in/?next=${encodeURIComponent(`/rate/${initialSlug ? `?pub=${initialSlug}` : ""}`)}`}
@@ -170,7 +170,7 @@ export function RateForm({ initialSlug }: { initialSlug?: string }) {
           <Stamp className="size-10" aria-hidden="true" />
         </span>
         <div className="flex flex-col gap-2">
-          <h2 className="font-display text-4xl font-extrabold tracking-tight text-balance">Pint logged at {pub.name}</h2>
+          <h2 className="font-display text-4xl font-semibold text-balance">Pint logged at {pub.name}</h2>
           <p className="text-base leading-relaxed text-muted-foreground text-pretty">
             {verified
               ? "Verified at the pub, so it carries full weight. A new stamp is in your Guin Passport."
@@ -218,7 +218,7 @@ export function RateForm({ initialSlug }: { initialSlug?: string }) {
         <VerifyCard state={verify} onCheck={checkLocation} />
 
         <fieldset className="flex flex-col gap-6">
-          <legend className="mb-4 font-display text-2xl font-bold tracking-tight">The pint, part by part</legend>
+          <legend className="mb-4 font-display text-2xl font-bold">The pint, part by part</legend>
           {PARTS.map((p) => (
             <RatingSlider
               key={p.key}

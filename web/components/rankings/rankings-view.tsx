@@ -106,7 +106,7 @@ export function RankingsView() {
           </p>
           <h1
             id="rankings-heading"
-            className="font-display text-4xl font-extrabold leading-[0.95] tracking-tight text-balance md:text-6xl"
+            className="font-display text-4xl font-semibold leading-[0.95] text-balance md:text-6xl"
           >
             The best pint near you
           </h1>
@@ -140,7 +140,7 @@ export function RankingsView() {
         ) : ratedCount === 0 ? (
           <div className="flex flex-col items-start gap-3 rounded-2xl bg-stout p-6 text-cream md:p-8">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-pub-light">Season one is open</p>
-            <p className="font-display text-3xl font-extrabold leading-tight tracking-tight text-balance">
+            <p className="font-display text-3xl font-semibold leading-tight text-balance">
               No pints rated here yet. The top spot is up for grabs.
             </p>
             <p className="max-w-prose text-sm leading-relaxed text-cream/75">
@@ -178,7 +178,7 @@ export function RankingsView() {
 
         <section aria-labelledby="unrated-heading" className="mt-4 flex flex-col gap-4 rounded-2xl bg-cream p-5 md:p-6">
           <div className="flex flex-col gap-1">
-            <h2 id="unrated-heading" className="font-display text-2xl font-bold tracking-tight">
+            <h2 id="unrated-heading" className="font-display text-2xl font-bold">
               Waiting for their first three pints
             </h2>
             <p className="text-sm leading-relaxed text-muted-foreground text-pretty">

@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { Award, BadgeCheck, CalendarClock, Scale, ShieldCheck, Users } from "lucide-react"
+import { AwardMedallion } from "@/components/brand/award-medallion"
+import { BadgeCheck, CalendarClock, Scale, ShieldCheck, Users } from "lucide-react"
 import { BandChip } from "@/components/band-chip"
 import { COMPONENT_LABELS, WEIGHTS, bandFor, weightedIndex, type Components } from "@/lib/pubs"
 import { cn } from "@/lib/utils"
@@ -8,7 +9,7 @@ import { cn } from "@/lib/utils"
 export const metadata: Metadata = {
   title: "How scoring works",
   description:
-    "How the RateMyGuin Excellence Index is calculated: 40% pour, 20% taste and temperature, 15% consistency, 15% atmosphere and service, 10% value.",
+    "How the ratemyGuin Excellence Index is calculated: 40% pour, 20% taste and temperature, 15% consistency, 15% atmosphere and service, 10% value.",
 }
 
 const SEGMENT_STYLE: Record<keyof Components, string> = {
@@ -74,7 +75,7 @@ export default function ScoringPage() {
       <section className="mx-auto flex w-full max-w-[1440px] flex-col gap-10 px-4 pb-14 pt-10 md:px-8 md:pt-16">
         <div className="flex max-w-3xl flex-col gap-4">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-pub">How scoring works</p>
-          <h1 className="font-display text-5xl font-extrabold leading-[0.92] tracking-tight text-balance md:text-7xl">
+          <h1 className="font-display text-5xl font-semibold leading-[0.92] text-balance md:text-7xl">
             One number for the whole pint.
           </h1>
           <p className="max-w-2xl text-lg leading-relaxed text-muted-foreground text-pretty">
@@ -91,7 +92,7 @@ export default function ScoringPage() {
                 className={cn("flex flex-col justify-between p-2.5 md:p-4", SEGMENT_STYLE[key])}
                 style={{ width: `${WEIGHTS[key] * 100}%` }}
               >
-                <span className="font-display text-xl font-extrabold tabular-nums leading-none md:text-4xl">
+                <span className="font-display text-xl font-semibold tabular-nums leading-none md:text-4xl">
                   {Math.round(WEIGHTS[key] * 100)}
                   <span className="text-sm md:text-xl">%</span>
                 </span>
@@ -121,7 +122,7 @@ export default function ScoringPage() {
         <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-8 px-4 py-14 md:px-8 lg:flex-row lg:gap-16">
           <div className="flex flex-col gap-3 lg:w-96 lg:shrink-0">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-pub-light">Worked example</p>
-            <h2 className="font-display text-4xl font-extrabold leading-none tracking-tight">{example.name}</h2>
+            <h2 className="font-display text-4xl font-semibold leading-none">{example.name}</h2>
             <p className="text-sm leading-relaxed text-cream/70">
               Each component is scored out of 100 from the pub&apos;s ratings, multiplied by its weight, then added up.
             </p>
@@ -145,24 +146,24 @@ export default function ScoringPage() {
             <div className="flex items-center gap-4 pt-5">
               <span className="flex-1 font-display text-lg font-bold">Excellence Index</span>
               <BandChip band={bandFor(exampleScore)} onDark />
-              <span className="font-display text-5xl font-extrabold tabular-nums">{exampleScore}</span>
+              <span className="font-display text-5xl font-semibold tabular-nums">{exampleScore}</span>
             </div>
           </div>
         </div>
       </section>
 
       <section className="mx-auto flex w-full max-w-[1440px] flex-col gap-8 px-4 py-14 md:px-8">
-        <h2 className="font-display text-4xl font-extrabold tracking-tight">The bands</h2>
+        <h2 className="font-display text-4xl font-semibold">The bands</h2>
         <ul className="grid grid-cols-1 gap-4 md:grid-cols-4">
           {BANDS.map((b) => (
             <li key={b.band} className="flex flex-col gap-3 rounded-2xl border border-border p-5">
-              <span className="font-display text-4xl font-extrabold tabular-nums">{b.range}</span>
+              <span className="font-display text-4xl font-semibold tabular-nums">{b.range}</span>
               <BandChip band={b.band} className="w-fit" />
               <p className="text-sm leading-relaxed text-muted-foreground">{b.copy}</p>
             </li>
           ))}
           <li className="flex flex-col gap-3 rounded-2xl border border-dashed border-stout/30 p-5">
-            <span className="font-display text-4xl font-extrabold text-muted-foreground">—</span>
+            <span className="font-display text-4xl font-semibold text-muted-foreground">—</span>
             <span className="w-fit rounded-full border border-dashed border-stout/30 px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
               Not yet rated
             </span>
@@ -174,7 +175,7 @@ export default function ScoringPage() {
       </section>
 
       <section className="mx-auto flex w-full max-w-[1440px] flex-col gap-8 px-4 pb-14 md:px-8">
-        <h2 className="font-display text-4xl font-extrabold tracking-tight">Verification and fairness</h2>
+        <h2 className="font-display text-4xl font-semibold">Verification and fairness</h2>
         <ul className="grid grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-2 lg:grid-cols-5">
           {FAIRNESS.map((f) => (
             <li key={f.title} className="flex flex-col gap-2">
@@ -187,18 +188,22 @@ export default function ScoringPage() {
       </section>
 
       <section className="mx-auto w-full max-w-[1440px] px-4 pb-16 md:px-8">
-        <div className="flex flex-col gap-4 rounded-3xl border border-brass/50 bg-brass/10 p-6 md:flex-row md:items-center md:gap-8 md:p-10">
-          <Award className="size-12 shrink-0 text-brass" aria-hidden="true" />
+        <div className="flex flex-col gap-8 rounded-3xl bg-stout p-6 text-cream md:p-10 lg:flex-row lg:items-center">
+          <div className="flex shrink-0 items-center justify-center gap-3 sm:gap-5">
+            <AwardMedallion tier="highlyRecommended" variant="gilt" size={104} />
+            <AwardMedallion tier="exceptional" variant="gold" size={136} />
+            <AwardMedallion tier="goldStandard" variant="gilt" size={104} />
+          </div>
           <div className="flex flex-1 flex-col gap-2">
-            <h2 className="font-display text-2xl font-extrabold tracking-tight md:text-3xl">The RateMyGuin Awards</h2>
-            <p className="max-w-2xl text-sm leading-relaxed text-pretty">
+            <h2 className="font-display text-3xl font-semibold md:text-4xl">The ratemyGuin Awards</h2>
+            <p className="max-w-2xl text-sm leading-relaxed text-pretty text-cream/75">
               Once a pub has 10 or more ratings, its band becomes an award: Exceptional, Gold Standard or Highly Recommended.
               Pubs can&apos;t enter, nominate or pay. The awards are independent and not official Guinness recognition.
             </p>
           </div>
           <Link
             href="/"
-            className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-stout px-5 font-semibold text-cream hover:bg-pub"
+            className="inline-flex h-11 shrink-0 items-center justify-center rounded-full bg-pub-light px-5 font-semibold text-stout hover:bg-cream"
           >
             See the rankings
           </Link>

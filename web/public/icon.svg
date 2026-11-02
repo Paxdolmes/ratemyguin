@@ -1,9 +1,1 @@
-<svg width="180" height="180" viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
-  <rect width="180" height="180" rx="40" fill="#17110d"/>
-  <g transform="translate(42 22) scale(3)">
-    <path d="M4 3h24l-2.6 33.2A2 2 0 0 1 23.4 38H8.6a2 2 0 0 1-2-1.8L4 3Z" fill="#17110d" stroke="#f6eedc" stroke-opacity=".5" stroke-width="1.2"/>
-    <path d="M4 3h24l-0.62 8H4.62L4 3Z" fill="#f6eedc"/>
-    <path d="M4.62 11h22.76" stroke="#d4a94a" stroke-width="1"/>
-    <path d="M10.5 22.5l4 4 7.5-8.5" fill="none" stroke="#d4a94a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 120 120" role="img" aria-label="ratemyGuin app icon"><rect width="120" height="120" rx="27" fill="#17110D"></rect><rect x="7" y="7" width="106" height="106" rx="21" fill="none" stroke="#D4A94A" stroke-opacity="0.45" stroke-width="0.6"></rect><g transform="translate(36.25 22) scale(1.1875)"><path d="M9.5 4 C8.7 10 6.5 16 6.5 24 C6.5 34 11.6 45 12.6 55 L12.6 59.4 Q12.6 60.5 13.7 60.5 H26.3 Q27.4 60.5 27.4 59.4 L27.4 55 C28.4 45 33.5 34 33.5 24 C33.5 16 31.3 10 30.5 4 Z" fill="#17110D"></path><path d="M9.5 4 Q20 0.9 30.5 4 C30.9 6.2 31.25 8.3 31.6 10.5 Q20 11.4 8.4 10.5 C8.75 8.3 9.1 6.2 9.5 4 Z" fill="#D4A94A" stroke="#D4A94A" stroke-width="1.0499999999999998" stroke-linejoin="round"></path><path d="M9.5 4 C8.7 10 6.5 16 6.5 24 C6.5 34 11.6 45 12.6 55 L12.6 59.4 Q12.6 60.5 13.7 60.5 H26.3 Q27.4 60.5 27.4 59.4 L27.4 55 C28.4 45 33.5 34 33.5 24 C33.5 16 31.3 10 30.5 4" fill="none" stroke="#D4A94A" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"></path><path d="M12.6 55 H27.4" fill="none" stroke="#D4A94A" stroke-width="1.0499999999999998"></path></g></svg>

@@ -1,37 +1,41 @@
 1:"$Sreact.fragment"
-2:"/_next/static/chunks/2mmv7adb8f7g3.js"
-3:"/_next/static/chunks/22oyv9v92-t4-.js"
-4:I[48303,["$2","$3"],"SiteHeader"]
-5:I[39756,["$2","$3"],"default"]
-6:I[37457,["$2","$3"],"default"]
-7:I[22016,["$2","$3"],""]
-e:"/_next/static/chunks/1-7dqvmf0zgdu.js"
-f:I[68819,["$2","$3","$e"],"FullMapView"]
-10:I[97367,["$2","$3"],"OutletBoundary"]
-11:"$Sreact.suspense"
-14:"ViewportBoundary"
-15:I[97367,["$2","$3"],"$14"]
-16:"MetadataBoundary"
-17:I[97367,["$2","$3"],"$16"]
-:HL["/_next/static/chunks/0to12ba5s3uiv.css","style"]
-9:X
-c:X
-c:C
-d:[["children",{"s":"__PAGE__","h":160,"d":{"r":["$","$1","c",{"children":[["$","main",null,{"children":["$","$Lf",null,{}]}],[["$","script","script-0",{"src":"/_next/static/chunks/1-7dqvmf0zgdu.js","async":true}]],["$","$L10",null,{"children":["$","$11",null,{"name":"Next.MetadataOutlet","children":"$@12"}]}]]}],"p":"$@13","v":null,"s":"$9"}}]]
-a:[["children",{"s":"map","h":96,"d":{"r":["$","$1","c",{"children":[null,["$","$L5",null,{"parallelRouterKey":"children","template":["$","$L6",null,{}]}]]}],"p":"$@b","v":"$c","s":"$9"},"c":"$Qd"}]]
-0:{"t":{"t":{"s":"","h":80,"d":{"r":["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/_next/static/chunks/0to12ba5s3uiv.css","precedence":"next"}],["$","script","script-0",{"src":"/_next/static/chunks/2mmv7adb8f7g3.js","async":true}],["$","script","script-1",{"src":"/_next/static/chunks/22oyv9v92-t4-.js","async":true}]],["$","html",null,{"lang":"en-GB","className":"_20uw4a_variable -w-5uq_variable bg-background","children":["$","body",null,{"className":"flex min-h-dvh flex-col font-sans antialiased","children":[["$","$L4",null,{}],["$","div",null,{"className":"flex flex-1 flex-col","children":["$","$L5",null,{"parallelRouterKey":"children","template":["$","$L6",null,{}],"notFound":[[["$","title",null,{"children":"404: This page could not be found."}],["$","div",null,{"style":{"fontFamily":"system-ui,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\"","height":"100vh","textAlign":"center","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center"},"children":["$","div",null,{"children":[["$","style",null,{"dangerouslySetInnerHTML":{"__html":"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}"}}],["$","h1",null,{"className":"next-error-h1","style":{"display":"inline-block","margin":"0 20px 0 0","padding":"0 23px 0 0","fontSize":24,"fontWeight":500,"verticalAlign":"top","lineHeight":"49px"},"children":404}],["$","div",null,{"style":{"display":"inline-block"},"children":["$","h2",null,{"style":{"fontSize":14,"fontWeight":400,"lineHeight":"49px","margin":0},"children":"This page could not be found."}]}]]}]}]],[]]}]}],["$","footer",null,{"className":"bg-stout text-cream","children":[["$","div",null,{"className":"mx-auto flex max-w-[1440px] flex-col gap-8 px-4 py-12 md:flex-row md:items-end md:justify-between md:px-8","children":[["$","div",null,{"className":"flex max-w-md flex-col gap-3","children":[["$","span",null,{"className":"inline-flex items-center gap-2","children":[["$","svg",null,{"viewBox":"0 0 32 40","className":"w-auto h-7","aria-hidden":true,"children":[["$","path",null,{"d":"M4 3h24l-2.6 33.2A2 2 0 0 1 23.4 38H8.6a2 2 0 0 1-2-1.8L4 3Z","fill":"var(--stout)","stroke":"var(--cream)","strokeOpacity":0.55,"strokeWidth":1.5}],["$","path",null,{"d":"M4 3h24l-0.62 8H4.62L4 3Z","fill":"var(--cream)"}],["$","path",null,{"d":"M4.62 11h22.76","stroke":"var(--pub-light)","strokeWidth":"1"}],["$","path",null,{"d":"M10.5 22.5l4 4 7.5-8.5","fill":"none","stroke":"var(--pub-light)","strokeWidth":"3","strokeLinecap":"round","strokeLinejoin":"round"}]]}],["$","span",null,{"className":"font-display text-xl font-bold tracking-tight","children":[["$","span",null,{"className":"text-cream","children":"ratemy"}],["$","span",null,{"className":"text-pub-light","children":"Guin"}]]}]]}],["$","p",null,{"className":"text-sm leading-relaxed text-cream/70","children":"An independent, community-run guide to the pint. RateMyGuin is not affiliated with, endorsed or sponsored by Guinness or Diageo. No pub can pay for a place in the table."}]]}],["$","nav",null,{"aria-label":"Footer","className":"flex flex-wrap gap-x-6 gap-y-2 text-sm text-cream/80","children":[["$","$L7",null,{"href":"/","className":"hover:text-cream","children":"Rankings"}],["$","$L7",null,{"href":"/map","className":"hover:text-cream","children":"Map"}],["$","$L7",null,{"href":"/passport","className":"hover:text-cream","children":"Passport"}],["$","$L7",null,{"href":"/scoring","className":"hover:text-cream","children":"How scoring works"}],["$","$L7",null,{"href":"/rate","className":"hover:text-cream","children":"Rate a pint"}]]}]]}],["$","div",null,{"className":"border-t border-cream/10","children":["$","p",null,{"className":"mx-auto max-w-[1440px] px-4 py-4 text-xs text-cream/50 md:px-8","children":"© 2026 RateMyGuin. Please drink responsibly."}]}]]}]]}]}]]}],"p":"$@8","v":null,"s":"$9"},"c":"$Qa"},"h":{"r":["$","$1","h",{"children":[null,["$","$L15",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}],["$","meta","2",{"name":"theme-color","content":"#17110D"}],["$","meta","3",{"name":"color-scheme","content":"light"}]]}],["$","$L17",null,{"children":[["$","div",null,{"hidden":true,"children":["$","$11",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"Map · ratemyGuin"}],"$L18","$L19","$L1a","$L1b"]}]}],null]}],"$L1c"]}],"p":"$@1d","v":null,"s":"$9"}},"a":"$@1e","u":"$@1f","b":"zK8dWEVGtRKYEP-f-gscm"}
-20:I[27201,["$2","$3"],"IconMark"]
-12:null
-18:["$","meta","1",{"name":"description","content":"Every rated pint on one map, plus thousands of pubs still waiting for their first score."}]
-19:["$","link","2",{"rel":"icon","href":"/icon.svg"}]
-1a:["$","link","3",{"rel":"apple-touch-icon","href":"/apple-icon.png"}]
-1b:["$","$L20","4",{}]
-1c:["$","meta",null,{"name":"next-size-adjust","content":""}]
-9:300
-1f:true
-9:C
-1e:0
-b:"$undefined"
-8:"$undefined"
-1d:"$undefined"
-13:"$undefined"
+2:"/_next/static/chunks/0-bhocx-i_2zj.js"
+3:"/_next/static/chunks/12dgppovopc45.js"
+4:"/_next/static/chunks/2gp0soyj9_e-z.js"
+5:I[48303,["$2","$3","$4"],"SiteHeader"]
+6:I[39756,["$2","$3","$4"],"default"]
+7:I[37457,["$2","$3","$4"],"default"]
+8:I[34234,["$2","$3","$4"],"Seal"]
+9:I[22016,["$2","$3","$4"],""]
+:HL["/_next/static/chunks/0q3hfnod7i1u_.css","style"]
+f:X
+13:X
+13:C
+14:[["children",{"s":"__PAGE__","h":160,"d":{"r":"$L15","p":"$@16","v":null,"s":"$f"}}]]
+10:[["children",{"s":"map","h":96,"d":{"r":"$L11","p":"$@12","v":"$13","s":"$f"},"c":"$Q14"}]]
+0:{"t":{"t":{"s":"","h":80,"d":{"r":["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/_next/static/chunks/0q3hfnod7i1u_.css","precedence":"next"}],["$","script","script-0",{"src":"/_next/static/chunks/0-bhocx-i_2zj.js","async":true}],["$","script","script-1",{"src":"/_next/static/chunks/12dgppovopc45.js","async":true}],["$","script","script-2",{"src":"/_next/static/chunks/2gp0soyj9_e-z.js","async":true}]],["$","html",null,{"lang":"en-GB","className":"mEA-Bq_variable Hozjta_variable bg-background","children":["$","body",null,{"className":"flex min-h-dvh flex-col font-sans antialiased","children":[["$","$L5",null,{}],["$","div",null,{"className":"flex flex-1 flex-col","children":["$","$L6",null,{"parallelRouterKey":"children","template":["$","$L7",null,{}],"notFound":[[["$","title",null,{"children":"404: This page could not be found."}],["$","div",null,{"style":{"fontFamily":"system-ui,\"Segoe UI\",Roboto,Helvetica,Arial,sans-serif,\"Apple Color Emoji\",\"Segoe UI Emoji\"","height":"100vh","textAlign":"center","display":"flex","flexDirection":"column","alignItems":"center","justifyContent":"center"},"children":["$","div",null,{"children":[["$","style",null,{"dangerouslySetInnerHTML":{"__html":"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}"}}],["$","h1",null,{"className":"next-error-h1","style":{"display":"inline-block","margin":"0 20px 0 0","padding":"0 23px 0 0","fontSize":24,"fontWeight":500,"verticalAlign":"top","lineHeight":"49px"},"children":404}],["$","div",null,{"style":{"display":"inline-block"},"children":["$","h2",null,{"style":{"fontSize":14,"fontWeight":400,"lineHeight":"49px","margin":0},"children":"This page could not be found."}]}]]}]}]],[]]}]}],["$","footer",null,{"className":"bg-stout text-cream","children":[["$","div",null,{"className":"mx-auto flex max-w-[1440px] flex-col gap-8 px-4 py-12 md:flex-row md:items-end md:justify-between md:px-8","children":[["$","div",null,{"className":"flex max-w-md flex-col gap-3","children":[["$","div",null,{"className":"inline-flex items-center gap-2.5","children":[["$","svg",null,{"width":17.5,"height":28,"viewBox":"0 0 40 64","role":"img","aria-label":"","children":["$","g",null,{"transform":"translate(0 0) scale(1)","children":[["$","path",null,{"d":"M9.5 4 C8.7 10 6.5 16 6.5 24 C6.5 34 11.6 45 12.6 55 L12.6 59.4 Q12.6 60.5 13.7 60.5 H26.3 Q27.4 60.5 27.4 59.4 L27.4 55 C28.4 45 33.5 34 33.5 24 C33.5 16 31.3 10 30.5 4 Z","fill":"#17110D"}],["$","path",null,{"d":"M9.5 4 Q20 0.9 30.5 4 C30.9 6.2 31.25 8.3 31.6 10.5 Q20 11.4 8.4 10.5 C8.75 8.3 9.1 6.2 9.5 4 Z","fill":"#F6EEDC","stroke":"#D4A94A","strokeWidth":1.8199999999999998,"strokeLinejoin":"round"}],["$","path",null,{"d":"M9.5 4 C8.7 10 6.5 16 6.5 24 C6.5 34 11.6 45 12.6 55 L12.6 59.4 Q12.6 60.5 13.7 60.5 H26.3 Q27.4 60.5 27.4 59.4 L27.4 55 C28.4 45 33.5 34 33.5 24 C33.5 16 31.3 10 30.5 4","fill":"none","stroke":"#D4A94A","strokeWidth":2.6,"strokeLinejoin":"round","strokeLinecap":"round"}],["$","path",null,{"d":"M12.6 55 H27.4","fill":"none","stroke":"#D4A94A","strokeWidth":1.8199999999999998}],false]}]}],["$","div",null,{"className":"flex flex-col gap-2","children":[["$","span",null,{"className":"font-serif font-medium tracking-[-0.015em] text-cream text-2xl","children":["ratemy",["$","span",null,{"className":"text-gilt","children":"Guin"}]]}],["$","span",null,{"className":"font-sans font-medium uppercase tracking-[0.32em] text-[0.55rem] text-cream/60","children":"The Independent Pint Index"}]]}],["$","span",null,{"className":"sr-only","children":"ratemyGuin"}]]}],["$","p",null,{"className":"text-sm leading-relaxed text-cream/70","children":"An independent, community-run guide to the pint. ratemyGuin is not affiliated with, endorsed or sponsored by Guinness or Diageo. No pub can pay for a place in the table."}]]}],["$","$L8",null,{"size":112,"tone":"black","className":"hidden shrink-0 md:block"}],["$","nav",null,{"aria-label":"Footer","className":"flex flex-wrap gap-x-6 gap-y-2 text-sm text-cream/80","children":[["$","$L9",null,{"href":"/","className":"hover:text-cream","children":"Rankings"}],["$","$L9",null,{"href":"/map","className":"hover:text-cream","children":"Map"}],"$La","$Lb","$Lc"]}]]}],"$Ld"]}]]}]}]]}],"p":"$@e","v":null,"s":"$f"},"c":"$Q10"},"h":{"r":"$L17","p":"$@18","v":null,"s":"$f"}},"a":"$@19","u":"$@1a","b":"KXTbThQAhOh7Rwb_d5Ukg"}
+1b:"/_next/static/chunks/2eyskfrcksf3p.js"
+1c:I[68819,["$2","$3","$4","$1b"],"FullMapView"]
+1d:I[97367,["$2","$3","$4"],"OutletBoundary"]
+1e:"$Sreact.suspense"
+20:"ViewportBoundary"
+21:I[97367,["$2","$3","$4"],"$20"]
+22:"MetadataBoundary"
+23:I[97367,["$2","$3","$4"],"$22"]
+24:I[27201,["$2","$3","$4"],"IconMark"]
+a:["$","$L9",null,{"href":"/passport","className":"hover:text-cream","children":"Passport"}]
+b:["$","$L9",null,{"href":"/scoring","className":"hover:text-cream","children":"How scoring works"}]
+c:["$","$L9",null,{"href":"/rate","className":"hover:text-cream","children":"Rate a pint"}]
+d:["$","div",null,{"className":"border-t border-cream/10","children":["$","p",null,{"className":"mx-auto max-w-[1440px] px-4 py-4 text-xs text-cream/50 md:px-8","children":"© 2026 ratemyGuin. Please drink responsibly."}]}]
+11:["$","$1","c",{"children":[null,["$","$L6",null,{"parallelRouterKey":"children","template":["$","$L7",null,{}]}]]}]
+15:["$","$1","c",{"children":[["$","main",null,{"children":["$","$L1c",null,{}]}],[["$","script","script-0",{"src":"/_next/static/chunks/2eyskfrcksf3p.js","async":true}]],["$","$L1d",null,{"children":["$","$1e",null,{"name":"Next.MetadataOutlet","children":"$@1f"}]}]]}]
+17:["$","$1","h",{"children":[null,["$","$L21",null,{"children":[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}],["$","meta","2",{"name":"theme-color","content":"#17110D"}],["$","meta","3",{"name":"color-scheme","content":"light"}]]}],["$","$L23",null,{"children":[["$","div",null,{"hidden":true,"children":["$","$1e",null,{"name":"Next.Metadata","children":[["$","title","0",{"children":"Map · ratemyGuin"}],["$","meta","1",{"name":"description","content":"Every rated pint on one map, plus thousands of pubs still waiting for their first score."}],["$","link","2",{"rel":"icon","href":"/icon.svg"}],["$","link","3",{"rel":"apple-touch-icon","href":"/apple-icon.png"}],["$","$L24","4",{}]]}]}],null]}],["$","meta",null,{"name":"next-size-adjust","content":""}]]}]
+1f:null
+1a:true
+f:300
+f:C
+19:0
+12:"$undefined"
+18:"$undefined"
+16:"$undefined"
+e:"$undefined"

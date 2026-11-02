@@ -83,7 +83,7 @@ export function LeagueTable({
                     <span className="flex items-center gap-1 text-xs font-semibold text-foreground/80">
                       <Award className="size-3.5 shrink-0 text-brass" aria-hidden="true" />
                       <span className="truncate">
-                        <span className="sr-only">RateMyGuin Awards: </span>
+                        <span className="sr-only">ratemyGuin Awards: </span>
                         {pub.award}
                       </span>
                     </span>

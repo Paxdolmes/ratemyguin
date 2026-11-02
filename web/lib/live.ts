@@ -1,6 +1,6 @@
 "use client"
 
-// Reads and writes the live RateMyGuin database (Supabase). The publishable key is
+// Reads and writes the live ratemyGuin database (Supabase). The publishable key is
 // safe to ship: row level security decides what each visitor can see and do.
 
 import { createClient, type Session } from "@supabase/supabase-js"

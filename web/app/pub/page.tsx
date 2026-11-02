@@ -62,7 +62,7 @@ function PubPage() {
   if (pub === null)
     return (
       <main className="mx-auto flex w-full max-w-[1440px] flex-col gap-4 px-4 py-16 md:px-8">
-        <h1 className="font-display text-4xl font-extrabold">Pub not found</h1>
+        <h1 className="font-display text-4xl font-semibold">Pub not found</h1>
         <Link href="/" className="font-semibold text-pub hover:underline">
           Back to the rankings
         </Link>
@@ -97,7 +97,7 @@ function PubPage() {
               </div>
               <div className="flex items-center gap-4">
                 <PubBadge pub={pub} size={72} className="rounded-2xl" />
-                <h1 className="font-display text-5xl font-extrabold leading-[0.92] tracking-tight text-balance md:text-7xl">
+                <h1 className="font-display text-5xl font-semibold leading-[0.92] text-balance md:text-7xl">
                   {pub.name}
                 </h1>
               </div>
@@ -179,7 +179,7 @@ function PubPage() {
             <>
               <div className="flex flex-col gap-5">
                 <div className="flex items-baseline justify-between">
-                  <h2 className="font-display text-2xl font-bold tracking-tight">Score breakdown</h2>
+                  <h2 className="font-display text-2xl font-bold">Score breakdown</h2>
                   <Link href="/scoring/" className="text-sm font-medium text-pub hover:underline">
                     How it works
                   </Link>
@@ -187,7 +187,7 @@ function PubPage() {
                 <BreakdownBars components={pub.components} />
               </div>
               <div className="flex flex-col gap-3">
-                <h2 className="font-display text-2xl font-bold tracking-tight">Consistency</h2>
+                <h2 className="font-display text-2xl font-bold">Consistency</h2>
                 <p className="text-sm leading-relaxed text-muted-foreground">
                   Monthly Excellence Index. A flatter line means the same pint every visit.
                 </p>
@@ -196,7 +196,7 @@ function PubPage() {
             </>
           ) : (
             <div className="flex flex-col gap-3 rounded-2xl border border-dashed border-stout/25 p-6">
-              <h2 className="font-display text-2xl font-bold tracking-tight">No breakdown yet</h2>
+              <h2 className="font-display text-2xl font-bold">No breakdown yet</h2>
               <p className="text-sm leading-relaxed text-muted-foreground">
                 We only publish an Excellence Index once a pub has {MIN_RATINGS} or more ratings in the last 12 months, so
                 one bad night can&apos;t sink a pub and one good one can&apos;t crown it.
@@ -207,7 +207,7 @@ function PubPage() {
 
         <div className="flex min-w-0 flex-1 flex-col gap-6">
           <div className="flex items-baseline justify-between gap-4 border-b-2 border-stout pb-3">
-            <h2 className="font-display text-2xl font-bold tracking-tight">Recent pints</h2>
+            <h2 className="font-display text-2xl font-bold">Recent pints</h2>
             <span className="text-sm text-muted-foreground">
               {ratings.length} {ratings.length === 1 ? "pint" : "pints"} in the last year
             </span>

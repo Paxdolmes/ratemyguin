@@ -22,7 +22,7 @@ export function PubBadge({ pub, size = 44, className }: { pub: Pick<Pub, "name" 
       ) : (
         <>
           <span className="absolute inset-x-0 top-0 h-[28%] bg-cream" />
-          <span className="relative mt-[18%] font-display font-extrabold tracking-tight text-cream" style={{ fontSize: size * 0.36 }}>
+          <span className="relative mt-[18%] font-display font-semibold text-cream" style={{ fontSize: size * 0.36 }}>
             {initials}
           </span>
         </>

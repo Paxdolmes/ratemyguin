@@ -21,7 +21,7 @@ function Stamp({ name, area, date, score, index }: { name: string; area: string;
         )}
       >
         <span className="text-[10px] font-semibold uppercase tracking-[0.14em] opacity-70">{area}</span>
-        <span className="font-display text-sm font-extrabold leading-tight text-balance md:text-base">{name}</span>
+        <span className="font-display text-sm font-semibold leading-tight text-balance md:text-base">{name}</span>
         {score !== null && <span className="font-display text-lg font-bold tabular-nums leading-none">{score}</span>}
         <span className="text-[10px] font-medium tabular-nums opacity-70">{date}</span>
       </div>
@@ -92,7 +92,7 @@ export default function PassportPage() {
     return (
       <main className="mx-auto flex w-full max-w-xl flex-col gap-4 px-4 py-16">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-pub">Guin Passport</p>
-        <h1 className="font-display text-5xl font-extrabold leading-[0.95] tracking-tight">A stamp for every pub you rate.</h1>
+        <h1 className="font-display text-5xl font-semibold leading-[0.95]">A stamp for every pub you rate.</h1>
         <p className="text-muted-foreground">Collect pubs, cities and countries, and earn badges along the way. Sign in to start yours.</p>
         <Link href="/sign-in/?next=%2Fpassport%2F" className="inline-flex h-12 w-fit items-center rounded-full bg-stout px-6 font-semibold text-cream hover:bg-pub">
           Sign in or sign up
@@ -113,7 +113,7 @@ export default function PassportPage() {
         <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-8 px-4 py-10 md:flex-row md:items-end md:justify-between md:px-8 md:py-14">
           <div className="flex flex-col gap-3">
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-paper/70">Guin Passport{name ? ` · ${name}` : ""}</p>
-            <h1 className="font-display text-5xl font-extrabold leading-[0.92] tracking-tight md:text-7xl">
+            <h1 className="font-display text-5xl font-semibold leading-[0.92] md:text-7xl">
               {TOTAL_PUBS} pubs stamped.
             </h1>
             <p className="max-w-md text-base leading-relaxed text-paper/80 text-pretty">
@@ -128,7 +128,7 @@ export default function PassportPage() {
             ].map((s) => (
               <div key={s.label} className="flex flex-col">
                 <dt className="text-xs uppercase tracking-[0.14em] text-paper/70">{s.label}</dt>
-                <dd className="font-display text-5xl font-extrabold tabular-nums">{s.value}</dd>
+                <dd className="font-display text-5xl font-semibold tabular-nums">{s.value}</dd>
               </div>
             ))}
           </dl>
@@ -136,7 +136,7 @@ export default function PassportPage() {
       </section>
 
       <section className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-10 md:px-8 md:py-14">
-        <h2 className="font-display text-3xl font-extrabold tracking-tight">Badges</h2>
+        <h2 className="font-display text-3xl font-semibold">Badges</h2>
         <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-6">
           {PUB_BADGES.map((t) => (
             <Badge key={t} icon={Trophy} title={`${t} pubs`} current={TOTAL_PUBS} target={t} />
@@ -148,7 +148,7 @@ export default function PassportPage() {
 
       <section className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 pb-16 md:px-8">
         <div className="flex items-baseline justify-between gap-4 border-b-2 border-stout pb-3">
-          <h2 className="font-display text-3xl font-extrabold tracking-tight">Stamps</h2>
+          <h2 className="font-display text-3xl font-semibold">Stamps</h2>
           <span className="text-sm text-muted-foreground">
             Showing {stamps.length} of {TOTAL_PUBS}
           </span>

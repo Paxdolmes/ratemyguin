@@ -1,5 +1,5 @@
 // Shared types, constants and helpers for the website. Data comes from the live
-// RateMyGuin database (see lib/live.ts); nothing here is sample data.
+// ratemyGuin database (see lib/live.ts); nothing here is sample data.
 
 export type City = string
 

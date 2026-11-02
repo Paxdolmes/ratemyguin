@@ -1,11 +1,11 @@
 import type { Metadata, Viewport } from 'next'
-import { Bricolage_Grotesque, Figtree } from 'next/font/google'
+import { Cormorant_Garamond, Jost } from 'next/font/google'
 import { SiteHeader } from '@/components/site-header'
 import { SiteFooter } from '@/components/site-footer'
 import './globals.css'
 
-const bricolage = Bricolage_Grotesque({ subsets: ['latin'], variable: '--font-bricolage' })
-const figtree = Figtree({ subsets: ['latin'], variable: '--font-figtree' })
+const cormorant = Cormorant_Garamond({ subsets: ['latin'], weight: ['500', '600', '700'], style: ['normal', 'italic'], variable: '--font-cormorant' })
+const jost = Jost({ subsets: ['latin'], variable: '--font-jost' })
 
 export const metadata: Metadata = {
   title: {
@@ -28,7 +28,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en-GB" className={`${bricolage.variable} ${figtree.variable} bg-background`}>
+    <html lang="en-GB" className={`${cormorant.variable} ${jost.variable} bg-background`}>
       <body className="flex min-h-dvh flex-col font-sans antialiased">
         <SiteHeader />
         <div className="flex flex-1 flex-col">{children}</div>

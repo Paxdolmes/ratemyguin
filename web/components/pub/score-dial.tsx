@@ -37,7 +37,7 @@ export function ScoreDial({ score, size = 220 }: { score: number | null; size?: 
         {score === null ? (
           <span className="font-display text-5xl font-bold text-cream/40">—</span>
         ) : (
-          <span className="font-display text-7xl font-extrabold leading-none tracking-tighter text-cream tabular-nums">
+          <span className="font-display text-7xl font-semibold leading-noneer text-cream tabular-nums">
             {score}
           </span>
         )}

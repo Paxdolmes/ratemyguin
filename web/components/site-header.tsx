@@ -27,7 +27,7 @@ export function SiteHeader() {
     <header className="sticky top-0 z-[1100] border-b border-cream/10 bg-stout text-cream">
       <div className="mx-auto flex h-16 max-w-[1440px] items-center gap-6 px-4 md:px-8">
         <Link href="/" aria-label="ratemyGuin home" className="shrink-0" onClick={() => setOpen(false)}>
-          <Logo onDark />
+          <Logo tone="onDark" size="sm" tagline={false} />
         </Link>
 
         <nav aria-label="Main" className="hidden flex-1 items-center gap-1 md:flex">

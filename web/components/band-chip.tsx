@@ -49,7 +49,7 @@ export function AwardChip({ label, className }: { label: string; className?: str
     >
       <Award className="size-3.5 text-brass" aria-hidden="true" />
       <span>
-        <span className="sr-only">RateMyGuin Awards: </span>
+        <span className="sr-only">ratemyGuin Awards: </span>
         {label}
       </span>
     </span>
