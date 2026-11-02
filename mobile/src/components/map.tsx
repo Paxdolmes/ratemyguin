@@ -7,10 +7,12 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { Fonts, usePalette } from '@/constants/theme';
 import type { PubWithScore } from '@/lib/store';
 
-type Props = { pubs: PubWithScore[]; here: { lat: number; lng: number }; height?: number; onPick: (id: string) => void };
+type Props = { pubs: PubWithScore[]; here: { lat: number; lng: number }; height?: number | `${number}%`; onPick: (id: string) => void };
 
-export function PubMap({ pubs, here, height = 280, onPick }: Props) {
+export function PubMap({ pubs: all, here, height = 280, onPick }: Props) {
   const c = usePalette();
+  // Label only rated pubs, nearest 40, so the flat map stays readable.
+  const pubs = all.filter((p) => p.score.index != null).slice(0, 40);
   const pts = [...pubs, here];
   const lats = pts.map((p) => p.lat);
   const lngs = pts.map((p) => p.lng);
