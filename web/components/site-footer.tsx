@@ -20,6 +20,7 @@ export function SiteFooter() {
           <Link href="/passport" className="hover:text-cream">Passport</Link>
           <Link href="/scoring" className="hover:text-cream">How scoring works</Link>
           <Link href="/rate" className="hover:text-cream">Rate a pint</Link>
+          <Link href="/owners/" className="hover:text-cream">For pubs</Link>
         </nav>
       </div>
       <div className="border-t border-cream/10">

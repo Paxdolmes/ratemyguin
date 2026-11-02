@@ -5,7 +5,7 @@
 
 import { createClient, type Session } from "@supabase/supabase-js"
 import { useEffect, useState } from "react"
-import { LOCATIONS, PLACES, distanceKm, type LocationKey, type PintRating, type Pub, type TagKey, type FeatureKey } from "./pubs"
+import { LOCATIONS, PLACES, distanceKm, type LocationKey, type PintRating, type Pub, type TagKey, type FeatureKey, type AccreditationKey } from "./pubs"
 
 const URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "https://yhttayboxljswczexspg.supabase.co"
 const KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "sb_publishable_8aeFY-i4xdQPbQ7kA_BRjA_WfoJR18a"
@@ -42,10 +42,15 @@ type DirectoryRow = {
   features: FeatureKey[] | null
   opened_on: string | null
   added_at: string | null
+  venue_note: string | null
+  lines_cleaned_on: string | null
+  accreditations: AccreditationKey[] | null
+  venue_updated_at: string | null
+  claimed: boolean | null
 }
 
 const COLS =
-  "id,name,address,neighbourhood,city,country,atmosphere,lat,lng,rating_count,verified_share,pour,taste_temperature,consistency,atmosphere_service,value,median_price_pence,excellence_index,website,brand,logo_url,image_url,pint_score,pub_score,price_updated_at,under_review,features,opened_on,added_at"
+  "id,name,address,neighbourhood,city,country,atmosphere,lat,lng,rating_count,verified_share,pour,taste_temperature,consistency,atmosphere_service,value,median_price_pence,excellence_index,website,brand,logo_url,image_url,pint_score,pub_score,price_updated_at,under_review,features,opened_on,added_at,venue_note,lines_cleaned_on,accreditations,venue_updated_at,claimed"
 
 function toPub(r: DirectoryRow, origin?: { lat: number; lng: number }): Pub {
   const ten = (v: number | null) => (v == null ? 0 : Math.round(Number(v) * 10))
@@ -84,6 +89,11 @@ function toPub(r: DirectoryRow, origin?: { lat: number; lng: number }): Pub {
     features: r.features ?? [],
     openedOn: r.opened_on,
     addedAt: r.added_at,
+    venueNote: r.venue_note,
+    linesCleanedOn: r.lines_cleaned_on,
+    accreditations: r.accreditations ?? [],
+    venueUpdatedAt: r.venue_updated_at,
+    claimed: !!r.claimed,
   }
 }
 
@@ -485,4 +495,62 @@ export type Favourite = { pub_id: string; name: string; city: string; pints: num
 export async function favourites(userId: string): Promise<Favourite[]> {
   const { data } = await supabase.rpc("favourites", { p_user: userId })
   return ((data ?? []) as Favourite[]).map((f) => ({ ...f, average: Number(f.average) }))
+}
+
+// ── Pub owners ─────────────────────────────────────────────────────────────
+export async function myPubs(): Promise<Pub[]> {
+  const { data: ids } = await supabase.rpc("my_pubs")
+  const list = ((ids ?? []) as unknown[]).map((x) => (typeof x === "string" ? x : (x as { my_pubs: string }).my_pubs))
+  if (!list.length) return []
+  const { data } = await supabase.from("pub_directory").select(COLS).in("id", list)
+  return ((data ?? []) as unknown as DirectoryRow[]).map((r) => toPub(r))
+}
+
+export type Claim = { id: string; pubId: string; pubName: string; status: "pending" | "approved" | "rejected"; at: string }
+
+export async function myClaims(userId: string): Promise<Claim[]> {
+  const { data } = await supabase.from("pub_claims").select("id,pub_id,status,created_at,pubs(name)").eq("user_id", userId).order("created_at", { ascending: false })
+  type Row = { id: string; pub_id: string; status: Claim["status"]; created_at: string; pubs: { name: string } | null }
+  return ((data ?? []) as unknown as Row[]).map((c) => ({ id: c.id, pubId: c.pub_id, pubName: c.pubs?.name ?? "A pub", status: c.status, at: c.created_at }))
+}
+
+export async function claimPub(userId: string, pubId: string, evidence: string) {
+  const { error } = await supabase.from("pub_claims").insert({ pub_id: pubId, user_id: userId, evidence })
+  if (error) throw error
+}
+
+export type VenueUpdate = {
+  opening_hours: string | null
+  venue_note: string | null
+  owner_features: FeatureKey[]
+  lines_cleaned_on: string | null
+  accreditations: AccreditationKey[]
+}
+
+export async function venueDetails(pubId: string): Promise<VenueUpdate | null> {
+  const { data } = await supabase.from("pubs").select("opening_hours,venue_note,owner_features,lines_cleaned_on,accreditations").eq("id", pubId).maybeSingle()
+  return data as VenueUpdate | null
+}
+
+export async function updateVenue(pubId: string, v: VenueUpdate) {
+  const { error } = await supabase.from("pubs").update({ ...v, venue_updated_at: new Date().toISOString() }).eq("id", pubId)
+  if (error) throw error
+}
+
+export type Insights = {
+  months: { month: string; pints: number; overall: number; pour: number; verified: number }[]
+  tags_recent: Partial<Record<TagKey, number>>
+  tags_before: Partial<Record<TagKey, number>>
+  unanswered: number
+}
+
+export async function pubInsights(pubId: string): Promise<Insights> {
+  const { data, error } = await supabase.rpc("pub_insights", { p_pub: pubId })
+  if (error) throw error
+  return data as Insights
+}
+
+export async function replyToRating(ratingId: string, pubId: string, userId: string, body: string) {
+  const { error } = await supabase.from("pub_responses").upsert({ rating_id: ratingId, pub_id: pubId, author: userId, body })
+  if (error) throw error
 }

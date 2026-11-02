@@ -42,7 +42,19 @@ export type Pub = {
   features?: FeatureKey[]
   openedOn?: string | null
   addedAt?: string | null
+  venueNote?: string | null
+  linesCleanedOn?: string | null
+  accreditations?: AccreditationKey[]
+  venueUpdatedAt?: string | null
+  claimed?: boolean
 }
+
+export const ACCREDITATIONS = {
+  cask_marque: "Cask Marque",
+  guinness_quality: "Brewer quality visit",
+  beer_and_cider_marque: "Beer & Cider Marque",
+} as const
+export type AccreditationKey = keyof typeof ACCREDITATIONS
 
 export const FEATURES = {
   beer_garden: "Beer garden",

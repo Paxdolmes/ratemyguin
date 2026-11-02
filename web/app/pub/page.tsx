@@ -13,7 +13,7 @@ import { SaveToList } from "@/components/pub/save-to-list"
 import { Sparkline } from "@/components/pub/sparkline"
 import { Trend } from "@/components/trend"
 import { cityMedianPrice, cityPosition, loadPub, loadRatings, nearestStations, type Station } from "@/lib/live"
-import { MIN_RATINGS, bandFor, currencyFor, excellenceIndex, formatPrice, isRated, monthlyTrend, timeAgo, TAGS, FEATURES, isNewOpening, type PintRating, type Pub, type TagKey } from "@/lib/pubs"
+import { MIN_RATINGS, bandFor, currencyFor, excellenceIndex, formatPrice, isRated, monthlyTrend, timeAgo, TAGS, FEATURES, ACCREDITATIONS, isNewOpening, type PintRating, type Pub, type TagKey } from "@/lib/pubs"
 
 export default function PubPageRoute() {
   return (
@@ -232,12 +232,38 @@ function PubPage() {
               <Plus className="size-4" aria-hidden="true" />
               Rate a pint here
             </Link>
+            {!pub.claimed && (
+              <Link href={`/owners/?claim=${pub.slug}`} className="text-xs text-cream/60 hover:text-cream hover:underline">
+                Run this pub? Claim it for free
+              </Link>
+            )}
           </div>
         </div>
       </section>
 
       <section className="mx-auto flex w-full max-w-[1440px] flex-col gap-10 px-4 py-10 md:px-8 md:py-14 lg:flex-row lg:gap-16">
         <div className="flex flex-col gap-10 lg:w-[420px] lg:shrink-0">
+          {(pub.venueNote || pub.linesCleanedOn || (pub.accreditations?.length ?? 0) > 0) && (
+            <div className="flex flex-col gap-3 rounded-2xl border border-border p-5">
+              <h2 className="font-display text-2xl font-bold">From the pub</h2>
+              {pub.venueNote && <p className="text-sm leading-relaxed">{pub.venueNote}</p>}
+              <dl className="flex flex-col gap-1 text-sm">
+                {pub.linesCleanedOn && (
+                  <div className="flex gap-2">
+                    <dt className="text-muted-foreground">Lines last cleaned</dt>
+                    <dd className="font-semibold">{timeAgo(pub.linesCleanedOn)}</dd>
+                  </div>
+                )}
+                {(pub.accreditations?.length ?? 0) > 0 && (
+                  <div className="flex gap-2">
+                    <dt className="text-muted-foreground">Accreditations</dt>
+                    <dd className="font-semibold">{pub.accreditations!.map((a) => ACCREDITATIONS[a]).join(", ")}</dd>
+                  </div>
+                )}
+              </dl>
+              <p className="text-xs text-muted-foreground">Supplied by the pub. It never changes the score.</p>
+            </div>
+          )}
           {tagCounts.length > 0 && (
             <div className="flex flex-col gap-3">
               <h2 className="font-display text-2xl font-bold">What drinkers say</h2>
