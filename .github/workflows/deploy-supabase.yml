@@ -89,6 +89,7 @@ jobs:
           EMAIL: ${{ inputs.test_email }}
           KEY: sb_publishable_8aeFY-i4xdQPbQ7kA_BRjA_WfoJR18a
         run: |
+          sleep 90 # auth settings take about a minute to go live after a change
           status=$(curl -sS -o response.json -w '%{http_code}' -X POST "https://$PROJECT_REF.supabase.co/auth/v1/otp" \
             -H "apikey: $KEY" -H "Content-Type: application/json" \
             -d "$(jq -n --arg e "$EMAIL" '{email: $e, create_user: true}')")
