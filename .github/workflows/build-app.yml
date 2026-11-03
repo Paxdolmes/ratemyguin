@@ -66,7 +66,14 @@ jobs:
           for v in ASC_API_KEY_P8 EXPO_ASC_KEY_ID EXPO_ASC_ISSUER_ID EXPO_APPLE_TEAM_ID; do
             if [ -z "${!v}" ]; then echo "::error::Missing secret for $v (see the top of this workflow)."; exit 1; fi
           done
-          printf '%s\n' "$ASC_API_KEY_P8" > "$RUNNER_TEMP/asc.p8"
+          # Tidy the pasted key: Windows line endings, or the whole key pasted on one line.
+          key=$(printf '%s' "$ASC_API_KEY_P8" | tr -d '\r')
+          body=$(printf '%s' "$key" | sed -e 's/-----BEGIN PRIVATE KEY-----//' -e 's/-----END PRIVATE KEY-----//' | tr -d ' \n\t')
+          { echo "-----BEGIN PRIVATE KEY-----"; printf '%s' "$body" | fold -w 64; echo; echo "-----END PRIVATE KEY-----"; } > "$RUNNER_TEMP/asc.p8"
+          if ! openssl pkey -in "$RUNNER_TEMP/asc.p8" -noout 2>/dev/null; then
+            echo "::error::ASC_API_KEY_P8 isn't a valid key ($(wc -l < "$RUNNER_TEMP/asc.p8") lines, ${#body} characters of key). Paste the whole .p8 file again."
+            exit 1
+          fi
           echo "EXPO_ASC_API_KEY_PATH=$RUNNER_TEMP/asc.p8" >> "$GITHUB_ENV"
       - name: Build
         run: |
