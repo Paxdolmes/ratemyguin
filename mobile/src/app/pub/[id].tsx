@@ -3,6 +3,7 @@ import { BadgeCheck, Clock, Footprints, MapPin, TrainFront } from 'lucide-react-
 import { useEffect, useState } from 'react';
 import { Image, Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 
+import { PubExtras } from '@/components/pub-extras';
 import { AwardChip, Body, Button, Card, H1, H2, IndexScore, Initials, ScoreBar, Small } from '@/components/ui';
 import { Fonts, usePalette } from '@/constants/theme';
 import { FEATURES, TAGS, type FeatureKey, type TagKey } from '@/domain/tags';
@@ -122,6 +123,8 @@ export default function PubProfile() {
         <ScoreBar label="Value for money · 10%" value={s.components.value} />
         {s.award ? <Small>{AWARD_DISCLAIMER}</Small> : null}
       </Card>
+
+      <PubExtras pubId={p.id} />
 
       {p.venueNote || p.linesCleanedOn ? (
         <Card style={{ gap: 6 }}>
