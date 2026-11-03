@@ -13,9 +13,18 @@ on:
         type: choice
         options: [london, dublin, manchester]
         default: london
+      job:
+        description: What to do
+        type: choice
+        options: [pubs, offers]
+        default: pubs
+
+permissions:
+  contents: write
 
 jobs:
   seed:
+    if: inputs.job != 'offers'
     runs-on: ubuntu-latest
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -31,3 +40,24 @@ jobs:
         run: node supabase/seed/osm-stations.mjs
       - name: Find logos and photos for the pubs
         run: node supabase/seed/pub-logos.mjs 4000
+
+  # Proof of concept: visits London pubs' own websites (respecting robots.txt) and saves
+  # the text around offers to the scrape-data branch, to be read and checked by hand.
+  offers:
+    if: inputs.job == 'offers'
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      PROJECT_REF: yhttayboxljswczexspg
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node supabase/seed/scrape-offers.mjs "$RUNNER_TEMP/offer-pages.jsonl" 2000
+      - name: Save to the scrape-data branch
+        run: |
+          mkdir "$RUNNER_TEMP/data" && cd "$RUNNER_TEMP/data" && git init -q -b scrape-data
+          cp ../offer-pages.jsonl . && git add .
+          git -c user.name=ratemyguin-bot -c user.email=bot@ratemyguin.com commit -qm "offer pages $(date -u +%F)"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" scrape-data
