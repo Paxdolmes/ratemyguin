@@ -5,7 +5,7 @@ import { Linking, ScrollView, Text, TextInput, View } from 'react-native';
 import { Lockup } from '@/components/brand';
 import { Body, Button, H1, Small } from '@/components/ui';
 import { Fonts, usePalette } from '@/constants/theme';
-import { createProfile, handleProblem, isEmail, sendCode, useAuth, verifyCode } from '@/lib/auth';
+import { createProfile, handleProblem, isEmail, sendCode, signInWithPassword, useAuth, verifyCode } from '@/lib/auth';
 import { appVariant } from '@/lib/variant';
 import { isAdult } from '@/domain/age';
 
@@ -27,6 +27,8 @@ export default function SignIn() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [wait, setWait] = useState(0);
+  const [withPassword, setWithPassword] = useState(false);
+  const [password, setPassword] = useState('');
 
   // Signed in: go back to what they were doing, e.g. the rating they were posting.
   useEffect(() => {
@@ -133,17 +135,27 @@ export default function SignIn() {
     content = (
       <>
         <TextInput value={email} onChangeText={setEmail} placeholder="you@example.com" placeholderTextColor={c.inkSubtle} keyboardType="email-address" autoCapitalize="none" autoComplete="email" style={field} />
-        <Button
-          label="Email me a code"
-          disabled={busy || !isEmail(email)}
-          onPress={() =>
-            run(async () => {
-              await sendCode(email);
-              setSentTo(email.trim().toLowerCase());
-              setWait(RESEND_AFTER_S);
-            })
-          }
-        />
+        {withPassword ? (
+          <>
+            <TextInput value={password} onChangeText={setPassword} placeholder="Password" placeholderTextColor={c.inkSubtle} secureTextEntry autoCapitalize="none" autoComplete="password" style={field} />
+            <Button label="Sign in" disabled={busy || !isEmail(email) || !password} onPress={() => run(() => signInWithPassword(email, password))} />
+          </>
+        ) : (
+          <Button
+            label="Email me a code"
+            disabled={busy || !isEmail(email)}
+            onPress={() =>
+              run(async () => {
+                await sendCode(email);
+                setSentTo(email.trim().toLowerCase());
+                setWait(RESEND_AFTER_S);
+              })
+            }
+          />
+        )}
+        <Text style={{ fontFamily: Fonts.bodySemi, color: c.inkSubtle, textAlign: 'center' }} onPress={() => setWithPassword(!withPassword)}>
+          {withPassword ? 'Email me a code instead' : 'Sign in with a password'}
+        </Text>
       </>
     );
   }

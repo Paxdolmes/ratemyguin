@@ -33,6 +33,8 @@ jobs:
       EMAIL_FROM: ${{ vars.EMAIL_FROM || 'codes@mail.ratemyguin.com' }}
       # Optional: STRIPE_SECRET_KEY (sk_test_… or sk_live_…) switches on pub plan payments.
       STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+      # Optional: APP_REVIEW_PASSWORD (10+ characters) sets up review@ratemyguin.com for Apple's reviewers.
+      APP_REVIEW_PASSWORD: ${{ secrets.APP_REVIEW_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
       - name: Check the secrets are set
@@ -76,6 +78,23 @@ jobs:
           echo "::add-mask::$secret"
           supabase secrets set --project-ref "$PROJECT_REF" STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY" STRIPE_WEBHOOK_SECRET="$secret"
           echo "Stripe connected"
+      - name: Set up the App Store review account
+        if: env.APP_REVIEW_PASSWORD != ''
+        env:
+          KEY: sb_publishable_8aeFY-i4xdQPbQ7kA_BRjA_WfoJR18a
+          REVIEW_EMAIL: review@ratemyguin.com
+        run: |
+          pw=${APP_REVIEW_PASSWORD//\'/\'\'}  # escape quotes for SQL
+          q="select private.setup_review_account('$REVIEW_EMAIL', '$pw') as id"
+          curl -sS -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" \
+            -d "$(jq -n --arg q "$q" '{query: $q}')" > review.json
+          jq -e '.[0].id' review.json > /dev/null || { echo "::error::Review account not set up: $(cat review.json)"; exit 1; }
+          status=$(curl -sS -o signin.json -w '%{http_code}' -X POST "https://$PROJECT_REF.supabase.co/auth/v1/token?grant_type=password" \
+            -H "apikey: $KEY" -H "Content-Type: application/json" \
+            -d "$(jq -n --arg e "$REVIEW_EMAIL" --arg p "$APP_REVIEW_PASSWORD" '{email: $e, password: $p}')")
+          if [ "$status" != 200 ]; then echo "::error::Review account can't sign in ($status): $(jq -c '{error, error_description, msg}' signin.json)"; exit 1; fi
+          echo "Review account ready: $REVIEW_EMAIL signs in with the APP_REVIEW_PASSWORD secret"
       - name: Send sign-in emails through Resend
         if: env.RESEND_API_KEY != ''
         run: |
