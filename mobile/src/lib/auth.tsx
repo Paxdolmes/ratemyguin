@@ -94,9 +94,25 @@ export const handleProblem = (h: string) =>
 export async function createProfile(handle: string, displayName: string) {
   const { data } = await supabase.auth.getUser();
   if (!data.user) throw new Error('Please sign in again.');
-  const { error } = await supabase.from('profiles').insert({ id: data.user.id, handle: handle.trim().toLowerCase(), display_name: displayName.trim() });
+  const { error } = await supabase.from('profiles').insert({
+    id: data.user.id,
+    handle: handle.trim().toLowerCase(),
+    display_name: displayName.trim(),
+    adult_confirmed_at: new Date().toISOString(),
+  });
   if (error?.code === '23505') throw new Error('That handle is taken. Try another.');
   if (error) throw error;
+}
+
+/** Removes the person's photos, then their account and everything linked to it. */
+export async function deleteAccount() {
+  const { data } = await supabase.auth.getUser();
+  if (!data.user) throw new Error('Please sign in again.');
+  const { data: files } = await supabase.storage.from('pint-photos').list(data.user.id, { limit: 1000 });
+  if (files?.length) await supabase.storage.from('pint-photos').remove(files.map((f) => `${data.user!.id}/${f.name}`));
+  const { error } = await supabase.rpc('delete_my_account');
+  if (error) throw error;
+  await supabase.auth.signOut();
 }
 
 export async function signOut() {

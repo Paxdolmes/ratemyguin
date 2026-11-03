@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { BadgeCheck, Flag, MapPinOff, MessageSquareReply } from "lucide-react"
-import { reportRating, useSession } from "@/lib/live"
+import { blockRatingAuthor, reportRating, useSession } from "@/lib/live"
 import { TAGS, currencyFor, type City, type PintRating } from "@/lib/pubs"
 
 const SUBS: { key: keyof PintRating; label: string }[] = [
@@ -15,13 +15,14 @@ const SUBS: { key: keyof PintRating; label: string }[] = [
 
 function ReportLink({ id }: { id: string }) {
   const { session } = useSession()
-  const [state, setState] = useState<"idle" | "open" | "sent">("idle")
+  const [state, setState] = useState<"idle" | "open" | "sent" | "blocked">("idle")
   if (!session) return null
+  if (state === "blocked") return <span className="text-xs text-muted-foreground">Blocked. You won&apos;t see their pints after a refresh.</span>
   if (state === "sent") return <span className="text-xs text-muted-foreground">Thanks, we&apos;ll take a look.</span>
   if (state === "idle")
     return (
       <button type="button" onClick={() => setState("open")} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
-        <Flag className="size-3" aria-hidden="true" /> Report
+        <Flag className="size-3" aria-hidden="true" /> Report or block
       </button>
     )
   return (
@@ -33,6 +34,7 @@ function ReportLink({ id }: { id: string }) {
           ["not_there", "Wasn't there"],
           ["staff", "Pub staff"],
           ["offensive", "Offensive"],
+          ["photo", "Bad photo"],
         ] as const
       ).map(([k, l]) => (
         <button
@@ -44,6 +46,13 @@ function ReportLink({ id }: { id: string }) {
           {l}
         </button>
       ))}
+      <button
+        type="button"
+        onClick={() => blockRatingAuthor(id).then(() => setState("blocked")).catch(() => setState("sent"))}
+        className="rounded-full border border-destructive/40 px-2 py-0.5 text-destructive hover:bg-destructive/10"
+      >
+        Block this person
+      </button>
     </span>
   )
 }

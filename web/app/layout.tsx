@@ -1,3 +1,4 @@
+import { CrashReporter } from "@/components/crash-reporter"
 import type { Metadata, Viewport } from 'next'
 import { Cormorant_Garamond, Jost } from 'next/font/google'
 import { SiteHeader } from '@/components/site-header'
@@ -30,6 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en-GB" className={`${cormorant.variable} ${jost.variable} bg-background`}>
       <body className="flex min-h-dvh flex-col font-sans antialiased">
+        <CrashReporter />
         <SiteHeader />
         <div className="flex flex-1 flex-col">{children}</div>
         <SiteFooter />

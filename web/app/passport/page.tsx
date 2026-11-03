@@ -7,10 +7,11 @@ import { myDiary, myProfile, myStamps, useSession, type DiaryEntry, type Stamp a
 import { Diary } from "@/components/passport/diary"
 import { Friends } from "@/components/passport/friends"
 import { Lists } from "@/components/passport/lists"
+import { Account } from "@/components/passport/account"
 import { cn } from "@/lib/utils"
 
 const PUB_BADGES = [10, 25, 50, 100]
-const TABS = ["Stamps", "Badges", "Diary", "Lists", "Friends"] as const
+const TABS = ["Stamps", "Badges", "Diary", "Lists", "Friends", "Account"] as const
 type Tab = (typeof TABS)[number]
 
 function Stamp({ name, area, date, score, index }: { name: string; area: string; date: string; score: number | null; index: number }) {
@@ -229,6 +230,7 @@ export default function PassportPage() {
           {tab === "Diary" && <Diary userId={session.user.id} />}
           {tab === "Lists" && <Lists userId={session.user.id} />}
           {tab === "Friends" && <Friends userId={session.user.id} />}
+          {tab === "Account" && <Account userId={session.user.id} email={session.user.email} />}
         </section>
       )}
     </main>

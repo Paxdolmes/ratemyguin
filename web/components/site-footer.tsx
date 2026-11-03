@@ -22,6 +22,9 @@ export function SiteFooter() {
           <Link href="/rate" className="hover:text-cream">Rate a pint</Link>
           <Link href="/offers/" className="hover:text-cream">Offers near me</Link>
           <Link href="/owners/" className="hover:text-cream">For pubs</Link>
+          <Link href="/support/" className="hover:text-cream">Help</Link>
+          <Link href="/privacy/" className="hover:text-cream">Privacy</Link>
+          <Link href="/terms/" className="hover:text-cream">Terms</Link>
         </nav>
       </div>
       <div className="border-t border-cream/10">

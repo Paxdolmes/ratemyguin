@@ -1,15 +1,38 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { BadgeCheck, Clock, Footprints, MapPin, TrainFront } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { Image, Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Image, Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { PubExtras } from '@/components/pub-extras';
 import { AwardChip, Body, Button, Card, H1, H2, IndexScore, Initials, ScoreBar, Small } from '@/components/ui';
 import { Fonts, usePalette } from '@/constants/theme';
 import { FEATURES, TAGS, type FeatureKey, type TagKey } from '@/domain/tags';
-import { supabase } from '@/lib/supabase';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { AWARD_DISCLAIMER, AWARDS, MIN_RATINGS_FOR_INDEX } from '@/domain/scores';
 import { formatDistance, formatPrice, useStore } from '@/lib/store';
+
+/** Apple asks every app with user content to let people report it and block its author. */
+function reportOrBlock(ratingId: string) {
+  const report = (reason: string) =>
+    supabase
+      .from('rating_reports')
+      .insert({ rating_id: ratingId, reason })
+      .then(({ error }) => Alert.alert(error ? 'Please sign in to report' : "Thanks, we'll take a look."));
+  Alert.alert('Report or block', 'What is wrong with this rating?', [
+    { text: 'Looks fake', onPress: () => void report('fake') },
+    { text: 'Offensive', onPress: () => void report('offensive') },
+    { text: 'Bad photo', onPress: () => void report('photo') },
+    {
+      text: 'Block this person',
+      style: 'destructive',
+      onPress: () =>
+        void supabase
+          .rpc('block_rating_author', { p_rating: ratingId })
+          .then(({ error }) => Alert.alert(error ? 'Please sign in to block' : "Blocked. You won't see their pints any more.")),
+    },
+    { text: 'Cancel', style: 'cancel' },
+  ]);
+}
 
 export default function PubProfile() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -177,6 +200,11 @@ export default function PubProfile() {
               <View style={{ backgroundColor: c.surfaceMuted, borderRadius: 12, padding: 10 }}>
                 <Small style={{ color: c.ink }}>Reply from {p.name}: {r.reply}</Small>
               </View>
+            ) : null}
+            {isSupabaseConfigured && /^[0-9a-f-]{36}$/i.test(r.id) ? (
+              <Pressable accessibilityRole="button" onPress={() => reportOrBlock(r.id)} hitSlop={8} style={{ alignSelf: 'flex-start' }}>
+                <Small>Report or block</Small>
+              </Pressable>
             ) : null}
           </Card>
         );

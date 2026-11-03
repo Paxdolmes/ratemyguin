@@ -117,3 +117,41 @@ do $$ begin
   assert (select source from public.offers_near(53.96, -1.0805, 1000) limit 1) = 'pub', 'pub offers first';
   assert (select count(*) from public.offers_near(53.96, -1.0805, 1000)) = 2, 'both offers near';
 end $$;
+
+-- App Store: 18+ sign-up, blocking, photo reports, delete account.
+insert into auth.users (id) values ('00000000-0000-0000-0000-0000000000cb');
+set role authenticated;
+set request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000cb';
+do $$ begin
+  insert into public.profiles (id, handle, display_name) values (auth.uid(), 'too_young_cb', 'Kid');
+  raise exception 'profiles need the 18+ confirmation';
+exception when check_violation then null;
+end $$;
+insert into public.profiles (id, handle, display_name, adult_confirmed_at) values (auth.uid(), 'grown_up_cb', 'Adult', now());
+do $$ declare n int; begin
+  select count(*) into n from public.public_ratings where pub_id = '00000000-0000-0000-0000-000000000c91';
+  assert n > 0, 'sees ratings before blocking';
+  perform public.block_rating_author((select id from public.public_ratings where pub_id = '00000000-0000-0000-0000-000000000c91' limit 1));
+  assert (select count(*) from public.public_ratings where pub_id = '00000000-0000-0000-0000-000000000c91') = 0, 'blocked rater hidden';
+  assert (select count(*) from public.blocks) = 1, 'block saved';
+end $$;
+
+-- Two photo reports hide the photo.
+reset role;
+update public.ratings set photo_path = 'x/y.jpg' where pub_id = '00000000-0000-0000-0000-000000000c92';
+insert into public.rating_reports (rating_id, reporter, reason)
+select id, '00000000-0000-0000-0000-0000000000c9', 'photo' from public.ratings where pub_id = '00000000-0000-0000-0000-000000000c92';
+insert into public.rating_reports (rating_id, reporter, reason)
+select id, '00000000-0000-0000-0000-0000000000cb', 'photo' from public.ratings where pub_id = '00000000-0000-0000-0000-000000000c92';
+do $$ begin
+  assert (select photo_path from public.public_ratings where pub_id = '00000000-0000-0000-0000-000000000c92') is null, 'reported photo hidden';
+end $$;
+-- Deleting the account removes the person.
+set role authenticated;
+set request.jwt.claim.sub = '00000000-0000-0000-0000-0000000000cb';
+select public.delete_my_account();
+reset role;
+do $$ begin
+  assert not exists (select 1 from public.profiles where id = '00000000-0000-0000-0000-0000000000cb'), 'profile gone';
+  assert not exists (select 1 from auth.users where id = '00000000-0000-0000-0000-0000000000cb'), 'login gone';
+end $$;

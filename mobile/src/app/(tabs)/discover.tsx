@@ -94,6 +94,10 @@ export default function Discover() {
       <Lockup />
       <Small style={{ marginTop: 10 }}>Fulham, London</Small>
       <H1>The best pint near you</H1>
+      <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+        <Chip label="Offers near me" onPress={() => router.push('/offers')} />
+        <Chip label="New openings" onPress={() => router.push('/new')} />
+      </View>
     </View>
   );
 

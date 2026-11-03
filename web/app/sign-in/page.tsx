@@ -1,8 +1,10 @@
 "use client"
 
+import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Suspense, useEffect, useState } from "react"
 import { GlassMark } from "@/components/brand/glass-mark"
+import { isAdult } from "@/lib/age"
 import { myProfile, supabase, useSession } from "@/lib/live"
 
 const field = "h-12 rounded-xl border border-border bg-paper px-4 focus-visible:outline-2 focus-visible:outline-pub"
@@ -17,6 +19,8 @@ function SignIn() {
   const [code, setCode] = useState("")
   const [name, setName] = useState("")
   const [handle, setHandle] = useState("")
+  const [dob, setDob] = useState("")
+  const [agreed, setAgreed] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -115,7 +119,10 @@ function SignIn() {
           onSubmit={(e) => {
             e.preventDefault()
             run(async () => {
-              const { error } = await supabase.from("profiles").insert({ id: session.user.id, handle, display_name: name.trim() })
+              if (!isAdult(dob)) throw new Error("Sorry, ratemyGuin is only for people aged 18 and over.")
+              const { error } = await supabase
+                .from("profiles")
+                .insert({ id: session.user.id, handle, display_name: name.trim(), adult_confirmed_at: new Date().toISOString() })
               if (error?.code === "23505") throw new Error("That handle is taken. Try another.")
               if (error) throw error
               router.replace(next)
@@ -138,7 +145,20 @@ function SignIn() {
             className={field}
           />
           <span className="text-xs text-muted-foreground">3 to 20 lower-case letters, numbers or underscores.</span>
-          <button type="submit" disabled={busy || name.trim().length < 2 || !/^[a-z0-9_]{3,20}$/.test(handle)} className={button}>
+          <label htmlFor="dob" className="text-sm font-semibold">
+            Date of birth
+          </label>
+          <input id="dob" type="date" required autoComplete="bday" max={new Date().toISOString().slice(0, 10)} value={dob} onChange={(e) => setDob(e.target.value)} className={field} />
+          <span className="text-xs text-muted-foreground">We only check you&apos;re 18 or over. We don&apos;t keep your date of birth.</span>
+          <label className="flex items-start gap-2 text-sm">
+            <input type="checkbox" required checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-1 size-4 accent-[var(--pub)]" />
+            <span>
+              I agree to the{" "}
+              <Link href="/terms/" className="font-semibold text-pub hover:underline">terms</Link> and{" "}
+              <Link href="/privacy/" className="font-semibold text-pub hover:underline">privacy policy</Link>.
+            </span>
+          </label>
+          <button type="submit" disabled={busy || name.trim().length < 2 || !/^[a-z0-9_]{3,20}$/.test(handle) || !dob || !agreed} className={button}>
             Continue
           </button>
         </form>

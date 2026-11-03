@@ -72,7 +72,7 @@ jobs:
               const p = await ctx.newPage();
               p.on('console', (m) => m.type() === 'error' && console.log(name, 'console:', m.text()));
               let pubLink = null;
-              for (const path of ['/', '/map/', '/scoring/', '/rate/', '/passport/', '/sign-in/', '/offers/', '/new/', '/owners/', 'PUB']) {
+              for (const path of ['/', '/map/', '/scoring/', '/rate/', '/passport/', '/sign-in/', '/offers/', '/new/', '/owners/', '/privacy/', '/support/', 'PUB']) {
                 const url = path === 'PUB' ? pubLink : process.env.SITE + path;
                 if (!url) continue;
                 await p.goto(url, { waitUntil: 'networkidle' }).catch((e) => console.log(e.message));

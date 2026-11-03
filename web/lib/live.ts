@@ -319,7 +319,7 @@ export async function myStamps(userId: string): Promise<Stamp[]> {
   return [...seen.values()]
 }
 
-export type ReportReason = "fake" | "not_there" | "offensive" | "staff" | "other"
+export type ReportReason = "fake" | "not_there" | "offensive" | "staff" | "photo" | "other"
 
 export async function reportRating(ratingId: string, reason: ReportReason) {
   const { error } = await supabase.from("rating_reports").insert({ rating_id: ratingId, reason })
@@ -707,4 +707,25 @@ export async function recentlyOpenedPubs(): Promise<Pub[]> {
   const since = new Date(Date.now() - 548 * 86400000).toISOString().slice(0, 10)
   const { data } = await supabase.from("pub_directory").select(COLS).gte("opened_on", since).order("opened_on", { ascending: false }).limit(30)
   return ((data ?? []) as unknown as DirectoryRow[]).map((r) => toPub(r))
+}
+
+// ── Account (App Store requirements) ───────────────────────────────────────
+/** Removes the person's photos, then their account and everything linked to it. */
+export async function deleteMyAccount(userId: string) {
+  const { data: files } = await supabase.storage.from("pint-photos").list(userId, { limit: 1000 })
+  if (files?.length) await supabase.storage.from("pint-photos").remove(files.map((f) => `${userId}/${f.name}`))
+  const { error } = await supabase.rpc("delete_my_account")
+  if (error) throw error
+  await supabase.auth.signOut()
+}
+export async function blockRatingAuthor(ratingId: string) {
+  const { error } = await supabase.rpc("block_rating_author", { p_rating: ratingId })
+  if (error) throw error
+}
+export async function blockedCount(): Promise<number> {
+  const { count } = await supabase.from("blocks").select("blocked", { count: "exact", head: true })
+  return count ?? 0
+}
+export async function unblockAll() {
+  await supabase.rpc("unblock_all")
 }
