@@ -1,0 +1,47 @@
+-- Proof of concept: offers found on pubs' own websites on 3 November 2026 (robots.txt respected),
+-- read and checked by hand. Shown as "From the pub's website" with a link; they lapse after four weeks.
+insert into public.offers (pub_id, kind, title, details, days, starts_on, ends_on, source, source_url, found_on)
+select v.pub_id, v.kind, v.title, v.details, v.days, date '2026-11-03', date '2026-11-30', 'web', v.url, date '2026-11-03'
+from (values
+('c51df3b5-4eeb-488a-9714-0ea741e03dec'::uuid, 'food', '50% off food on Mondays', null, '{1}'::smallint[], 'https://royalalbertpub.co.uk/50-off-food-mondays/'),
+('d4a10b0b-e0dd-4b20-a36a-77232d45b0f3'::uuid, 'food', 'A kilo of wings for £14', 'Every Wednesday from 4pm', '{3}'::smallint[], 'https://www.handandflower.co.uk/whats-on'),
+('3c084f8d-00b0-4874-996f-11bcddcb7e18'::uuid, 'food', 'Five wings for £5', 'Every Wednesday. Extra wings £1 each.', '{3}'::smallint[], 'https://www.tulsehillhotel.com/'),
+('6c560675-aee0-4d35-a8b0-24e374d487c3'::uuid, 'food', 'Five wings for £5', 'Every Wednesday. Extra wings £1 each.', '{3}'::smallint[], 'https://www.angeloakpeckham.com/'),
+('467109c7-4697-40d8-bf0b-26c459473ef1'::uuid, 'food', 'Five wings for £5', 'Every Wednesday. Extra wings £1 each.', '{3}'::smallint[], 'https://www.maynardarmsn8.co.uk/'),
+('4beae928-1f75-4480-b899-7c9e2a9e1f4b'::uuid, 'food', 'Five wings for £5', 'Every Wednesday. Extra wings £1 each.', '{3}'::smallint[], 'https://www.boaterskingston.com/'),
+('f9245236-819c-4690-8e27-80334c215a4a'::uuid, 'food', 'Wrap and a soft drink for £10', 'Weekdays, 12 to 3pm', '{1,2,3,4,5}'::smallint[], 'https://www.castleealing.co.uk/'),
+('6447b39d-96de-47df-a4ca-dff2b2273188'::uuid, 'food', 'Pizza and a pint for £15', 'Well Street pizza, every Monday and Tuesday', '{1,2}'::smallint[], 'https://www.urbanpubsandbars.com/venues/the-london-fields'),
+('07589eae-9cba-4f5a-839e-a6d9f4e8e966'::uuid, 'food', 'Burger and a pint for £9.95', 'Any burger, every Wednesday', '{3}'::smallint[], 'https://www.greeneking.co.uk/pubs/greater-london/brockley-jack'),
+('07589eae-9cba-4f5a-839e-a6d9f4e8e966'::uuid, 'food', 'Sunday roasts from £13.95', null, '{0}'::smallint[], 'https://www.greeneking.co.uk/pubs/greater-london/brockley-jack'),
+('0a75bef9-0bba-4f6b-b9f3-49185f369dfb'::uuid, 'food', '£7.50 pizzas on Mondays', null, '{1}'::smallint[], 'https://crownrooms.co.uk/'),
+('03cf7ffb-ba11-4587-afe0-85a5b4506bf9'::uuid, 'other', '20% off food and drink on Thursdays', 'For locals with the pub''s loyalty card, from the bar', '{4}'::smallint[], 'https://www.tapontheline.co.uk/whats-on'),
+('ff615087-7da3-432a-83ff-08c89925e08d'::uuid, 'food', '50% off food on Mondays', null, '{1}'::smallint[], 'https://knowlesofnorwood.co.uk/50-off-food-mondays/'),
+('e7292250-c497-4c07-8997-7d6686306b67'::uuid, 'food', '50% off food on Mondays', 'The whole food menu, from fish and chips to burgers', '{1}'::smallint[], 'https://catfordtavern.com/'),
+('3150127f-e0e0-4570-88d2-4926a15a616f'::uuid, 'food', 'Weekday lunch classics for £9.95', 'Steak pie and chips, chilli, sausage and mash and more, from noon', '{1,2,3,4,5}'::smallint[], 'https://www.suninnrichmond.co.uk/'),
+('2cab7198-d775-4030-90ab-d06ff9de36b9'::uuid, 'food', 'Burger, fries and a can for £16.50', 'Every Thursday, with an East London Brewing can', '{4}'::smallint[], 'https://www.tavernonthehill.co.uk/'),
+('57eef4ad-f7c0-4fc1-9b8f-a7f0fab424ff'::uuid, 'food', 'Burger, fries and a can for £16.50', 'Every Thursday', '{4}'::smallint[], 'https://www.leytonstonetavern.com/public/'),
+('4a65e560-5c8c-4fe4-b92b-53c17f6e8665'::uuid, 'food', 'A kilo of wings and two drinks for £27', 'Every Wednesday, made for sharing', '{3}'::smallint[], 'https://www.windjammerlondon.co.uk/whats-on'),
+('c0b22ccd-7bdb-422d-a1e2-a958d9a5df5f'::uuid, 'food', 'Pie and a pint for £15', 'Choose your pie and your pint, every Thursday', '{4}'::smallint[], 'https://admiralhardygreenwich.co.uk/whats-on'),
+('9f2bb43a-520f-4e1d-a3c0-61d0241764f8'::uuid, 'pint', '£5 pints on Thursdays', 'Open till close', '{4}'::smallint[], 'https://www.thebarrelproject.co.uk/'),
+('d97e0eae-864b-438a-ac0b-cb1f89d240c2'::uuid, 'food', 'Pizza and a pint for £10', 'Margherita and a pint of Exale lager, every Monday', '{1}'::smallint[], 'https://www.threecoltstavern.co.uk/offers'),
+('d97e0eae-864b-438a-ac0b-cb1f89d240c2'::uuid, 'food', 'A slice and a schooner for £8.49', 'Every Thursday', '{4}'::smallint[], 'https://www.threecoltstavern.co.uk/offers'),
+('882449db-07e0-42a2-8b20-0f972f5cfae2'::uuid, 'food', 'Fish and chips for £11.50', 'All day Friday', '{5}'::smallint[], 'https://www.thelightermanbarking.co.uk/offers'),
+('bda2d58f-723b-4d02-ad1b-774742fba959'::uuid, 'food', 'Two burgers for £20', 'All day Monday, before the quiz', '{1}'::smallint[], 'https://www.urbanpubsandbars.com/venues/the-old-ship'),
+('8b695ca1-2ee1-4eef-8420-4db22b32a4fe'::uuid, 'food', 'Burger and fries for £10', 'Every Monday', '{1}'::smallint[], 'https://www.urbanpubsandbars.com/venues/clapton-hart'),
+('6e6622e5-722e-44d3-af80-c8d9607aaa66'::uuid, 'food', 'Cheeseburger and a pint for £15', 'Every day they''re open', '{0,1,2,3,4,5,6}'::smallint[], 'https://themarqueemoon.uk/'),
+('6e6622e5-722e-44d3-af80-c8d9607aaa66'::uuid, 'food', '£2 oysters on Wednesdays', null, '{3}'::smallint[], 'https://themarqueemoon.uk/'),
+('6e9e477c-9a8e-4ca1-82e3-04df6ef53573'::uuid, 'food', 'Pie and a pint for £21', 'Every Wednesday', '{3}'::smallint[], 'https://www.thedukewanstead.com/'),
+('ef106b37-2966-4f3f-9747-187a3baac8e7'::uuid, 'pint', '£5 Harbour pints on Wednesdays', null, '{3}'::smallint[], 'https://www.haydennottinghill.com/'),
+('10e803af-0aa9-4bf0-8592-d6c5f7b88fa6'::uuid, 'pint', '£5 pints, all day', null, '{0,1,2,3,4,5,6}'::smallint[], 'https://www.thehatandtun.com/'),
+('a1cfd7bd-3e1d-4ddd-bc57-c68a9fba0bf3'::uuid, 'pint', '£5 Fauna pints until 7pm', 'Weekdays', '{1,2,3,4,5}'::smallint[], 'https://www.faunabrewing.com/the-foresters-arms'),
+('8d0e7892-e1b3-4388-8c74-057cb89b72a8'::uuid, 'food', '25% off food on Wednesdays', 'All day', '{3}'::smallint[], 'https://butcombe.com/the-brown-cow-pub-fulham/offers/'),
+('e80679e4-9bcf-40f2-a6a8-e2578ce8bf46'::uuid, 'food', '20% off food on Tuesdays', 'For Wadworth Rewards members', '{2}'::smallint[], 'https://www.kingsarms-fulham.co.uk/offers-rewards'),
+('42017d50-3bb8-46d0-9eab-08c6ed0e8b9c'::uuid, 'food', '£9 takeaway pizzas', 'Any 12-inch pizza, every day', '{0,1,2,3,4,5,6}'::smallint[], 'https://www.therosendale.co.uk/offers/'),
+('1550ae0e-0b3a-4182-b1ed-1211d9430d20'::uuid, 'pint', 'Happy hour, 4 to 7pm', 'Monday to Friday', '{1,2,3,4,5}'::smallint[], 'https://www.greenwichtavern.co.uk/whatson'),
+('3ed9b127-6971-4cae-8017-a1cfed90f2e8'::uuid, 'pint', 'Selected drinks £5, 4 to 6pm', 'Monday to Friday', '{1,2,3,4,5}'::smallint[], 'https://www.georgeiv.co.uk/whats-on'),
+('214578c8-fbf7-4b55-8a5b-3190498fd144'::uuid, 'food', 'Two courses for £9.95', 'Weekdays, 12 to 5pm', '{1,2,3,4,5}'::smallint[], 'https://www.greeneking.co.uk/pubs/middlesex/crown-and-horseshoes/deals'),
+('98b5ca3b-8613-4c18-9b78-c197d1cb02aa'::uuid, 'food', '£10 lunch specials', 'Wednesday to Friday', '{3,4,5}'::smallint[], 'https://thecolonelfawcett.co.uk/food/'),
+('538a020f-229f-48b2-9597-e75de1327fa3'::uuid, 'food', 'Sunday roasts from £9.99', null, '{0}'::smallint[], 'https://www.flaminggrillpubs.co.uk/pubs/middlesex/whittington/deals')
+) v(pub_id, kind, title, details, days, url)
+where exists (select 1 from public.pubs p where p.id = v.pub_id)
+  and not exists (select 1 from public.offers o where o.pub_id = v.pub_id and o.title = v.title);
