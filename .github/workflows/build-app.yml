@@ -18,6 +18,10 @@ on:
         type: choice
         options: [android, ios]
         default: ios
+      only_check:
+        description: Don't build, just show the latest builds and their status
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -52,7 +56,14 @@ jobs:
       - run: npm ci
       - name: Who am I on Expo
         run: npx --yes eas-cli@latest whoami
+      - name: Latest builds
+        if: inputs.only_check
+        run: |
+          npx --yes eas-cli@latest build:list --limit 3 --json --non-interactive \
+            | jq -r '.[] | "BUILD \(.platform) \(.appBuildVersion // "?") \(.status) \(.error.message // "") https://expo.dev/accounts/ratemyguin/projects/ratemyguin/builds/\(.id)"'
+          exit 0
       - name: Link the Expo project if it isn't yet
+        if: ${{ !inputs.only_check }}
         run: |
           if ! node -e "const c=require('@expo/config').getConfig('.',{skipSDKVersionRequirement:true}).exp; process.exit(c.extra?.eas?.projectId?0:1)"; then
             npx --yes eas-cli@latest init --non-interactive --force || true
@@ -61,7 +72,7 @@ jobs:
             exit 1
           fi
       - name: Set up Apple signing
-        if: env.PLATFORM == 'ios'
+        if: env.PLATFORM == 'ios' && !inputs.only_check
         run: |
           for v in ASC_API_KEY_P8 EXPO_ASC_KEY_ID EXPO_ASC_ISSUER_ID EXPO_APPLE_TEAM_ID; do
             if [ -z "${!v}" ]; then echo "::error::Missing secret for $v (see the top of this workflow)."; exit 1; fi
@@ -76,6 +87,7 @@ jobs:
           fi
           echo "EXPO_ASC_API_KEY_PATH=$RUNNER_TEMP/asc.p8" >> "$GITHUB_ENV"
       - name: Build
+        if: ${{ !inputs.only_check }}
         run: |
           if [ "$PLATFORM" = ios ]; then profile=production; else profile=preview; fi
           [ "$APP_VARIANT" = pubs ] && profile="$profile-pubs"
