@@ -554,3 +554,133 @@ export async function replyToRating(ratingId: string, pubId: string, userId: str
   const { error } = await supabase.from("pub_responses").upsert({ rating_id: ratingId, pub_id: pubId, author: userId, body })
   if (error) throw error
 }
+
+// ── ratemyGuin for Pubs (owner side only; drinkers never see a pub's plan) ─────
+export type PubPlan = { status: "active" | "trialing" | "past_due" | "cancelled"; currentPeriodEnd: string | null; alerts: boolean; billing: boolean }
+
+export async function pubPlan(pubId: string): Promise<PubPlan | null> {
+  const { data } = await supabase.from("pub_plans").select("status,current_period_end,alerts,stripe_customer").eq("pub_id", pubId).maybeSingle()
+  if (!data) return null
+  const live = data.status !== "cancelled" && (!data.current_period_end || new Date(data.current_period_end).getTime() > Date.now() - 3 * 86400000)
+  return live ? { status: data.status, currentPeriodEnd: data.current_period_end, alerts: data.alerts, billing: !!data.stripe_customer } : null
+}
+
+export async function setQualityAlerts(pubId: string, on: boolean) {
+  const { error } = await supabase.rpc("set_quality_alerts", { p_pub: pubId, p_on: on })
+  if (error) throw error
+}
+
+/** Opens Stripe: the monthly plan, a week in "Our featured pubs", or the billing portal. */
+export async function startPayment(pubId: string, action: "plan" | "featured" | "portal"): Promise<string> {
+  const { data, error } = await supabase.functions.invoke("pub-plan", { body: { pub_id: pubId, action } })
+  if (error) {
+    const body = await (error as { context?: Response }).context?.json?.().catch(() => null)
+    throw new Error(body?.error ?? "payments_off")
+  }
+  return (data as { url: string }).url
+}
+
+export type LocalComparison = {
+  pubs: { id: string; name: string; metres: number; excellence: number | null; pint: number | null; ratings: number; you: boolean }[]
+  praise: Partial<Record<TagKey, { you: number; nearby: number }>>
+}
+export async function localComparison(pubId: string): Promise<LocalComparison> {
+  const { data, error } = await supabase.rpc("pub_local_comparison", { p_pub: pubId })
+  if (error) throw error
+  return data as LocalComparison
+}
+
+export type BestTime = { dow: number; slot: "lunch" | "afternoon" | "evening" | "late"; pints: number; overall: number }
+export async function bestTimes(pubId: string): Promise<BestTime[]> {
+  const { data, error } = await supabase.rpc("pub_best_times", { p_pub: pubId })
+  if (error) throw error
+  return (data ?? []) as BestTime[]
+}
+
+export type QualityAlert = { part: "pour" | "temperature" | "taste" | "overall"; recent: number; before: number; pints: number }
+export async function qualityAlerts(pubId: string): Promise<QualityAlert[]> {
+  const { data, error } = await supabase.rpc("pub_alerts", { p_pub: pubId })
+  if (error) throw error
+  return (data ?? []) as QualityAlert[]
+}
+
+// Events, photos and offers: shown to drinkers on pub pages.
+export const EVENT_KINDS = { quiz: "Quiz", live_sport: "Live sport", live_music: "Live music", food: "Food", tasting: "Tasting", other: "Event" } as const
+export type EventKind = keyof typeof EVENT_KINDS
+export type PubEvent = { id: string; kind: EventKind; title: string; startsAt: string; note: string | null }
+
+export async function pubEvents(pubId: string): Promise<PubEvent[]> {
+  const { data } = await supabase.from("pub_events").select("id,kind,title,starts_at,note").eq("pub_id", pubId)
+    .gte("starts_at", new Date(Date.now() - 6 * 3600000).toISOString()).order("starts_at").limit(8)
+  return ((data ?? []) as { id: string; kind: EventKind; title: string; starts_at: string; note: string | null }[])
+    .map((e) => ({ id: e.id, kind: e.kind, title: e.title, startsAt: e.starts_at, note: e.note }))
+}
+export async function addEvent(pubId: string, e: { kind: EventKind; title: string; startsAt: string; note: string | null }) {
+  const { error } = await supabase.from("pub_events").insert({ pub_id: pubId, kind: e.kind, title: e.title, starts_at: e.startsAt, note: e.note })
+  if (error) throw error
+}
+export async function removeEvent(id: string) {
+  await supabase.from("pub_events").delete().eq("id", id)
+}
+
+export type PubPhoto = { id: string; url: string; caption: string | null; path: string }
+export async function pubPhotos(pubId: string): Promise<PubPhoto[]> {
+  const { data } = await supabase.from("pub_photos").select("id,path,caption").eq("pub_id", pubId).order("created_at", { ascending: false })
+  return ((data ?? []) as { id: string; path: string; caption: string | null }[]).map((p) => ({
+    ...p,
+    url: supabase.storage.from("pub-photos").getPublicUrl(p.path).data.publicUrl,
+  }))
+}
+export async function addPubPhoto(pubId: string, file: File, caption: string | null) {
+  const path = `${pubId}/${crypto.randomUUID()}.jpg`
+  const { error: upErr } = await supabase.storage.from("pub-photos").upload(path, await shrink(file), { contentType: "image/jpeg" })
+  if (upErr) throw upErr
+  const { error } = await supabase.from("pub_photos").insert({ pub_id: pubId, path, caption })
+  if (error) throw error
+}
+export async function removePubPhoto(photo: PubPhoto) {
+  await supabase.from("pub_photos").delete().eq("id", photo.id)
+  await supabase.storage.from("pub-photos").remove([photo.path])
+}
+
+export const OFFER_KINDS = { food: "Food", pint: "Pint", event: "Event", other: "Offer" } as const
+export type OfferKind = keyof typeof OFFER_KINDS
+export type Offer = { id: string; pubId: string; pubName: string; area: string | null; kind: OfferKind; title: string; details: string | null; days: number[]; endsOn: string; metres?: number; lat?: number; lng?: number }
+
+/** UK rules on alcohol promotions; the database checks this too. */
+export const IRRESPONSIBLE_OFFER =
+  /(bottomless|unlimited|all[- ]you[- ]can[- ]drink|free (pint|drink|round|shot)s?|buy \w+ get|\b(2|two) ?(for|4) ?(1|one)\b|bogof|down it|down in one|chug|drinking game|shots?\b|as much as|drink more|get drunk|wasted|hammered)/i
+
+export async function pubOffers(pubId: string): Promise<Offer[]> {
+  const today = new Date().toISOString().slice(0, 10)
+  const { data } = await supabase.from("offers").select("id,pub_id,kind,title,details,days,ends_on").eq("pub_id", pubId)
+    .lte("starts_on", today).gte("ends_on", today).order("ends_on")
+  return ((data ?? []) as { id: string; pub_id: string; kind: OfferKind; title: string; details: string | null; days: number[]; ends_on: string }[])
+    .map((o) => ({ id: o.id, pubId: o.pub_id, pubName: "", area: null, kind: o.kind, title: o.title, details: o.details, days: o.days, endsOn: o.ends_on }))
+}
+export async function offersNear(lat: number, lng: number, metres = 3000): Promise<Offer[]> {
+  const { data } = await supabase.rpc("offers_near", { p_lat: lat, p_lng: lng, p_metres: metres })
+  type Row = { id: string; pub_id: string; pub_name: string; neighbourhood: string | null; kind: OfferKind; title: string; details: string | null; days: number[]; ends_on: string; metres: number; lat: number; lng: number }
+  return ((data ?? []) as Row[]).map((o) => ({
+    id: o.id, pubId: o.pub_id, pubName: o.pub_name, area: o.neighbourhood, kind: o.kind, title: o.title, details: o.details,
+    days: o.days, endsOn: o.ends_on, metres: o.metres, lat: o.lat, lng: o.lng,
+  }))
+}
+export async function addOffer(pubId: string, o: { kind: OfferKind; title: string; details: string | null; days: number[]; endsOn: string }) {
+  const { error } = await supabase.from("offers").insert({ pub_id: pubId, kind: o.kind, title: o.title, details: o.details, days: o.days, ends_on: o.endsOn })
+  if (error) throw error
+}
+export async function removeOffer(id: string) {
+  await supabase.from("offers").delete().eq("id", id)
+}
+
+export type FeaturedPub = { id: string; name: string; area: string | null; city: string; lat: number; lng: number; logoUrl: string | null; imageUrl: string | null }
+export async function featuredPubs(city?: string): Promise<FeaturedPub[]> {
+  let q = supabase.from("featured_now").select("id,name,neighbourhood,city,lat,lng,logo_url,image_url")
+  if (city) q = q.eq("city", city)
+  const { data } = await q.limit(12)
+  type Row = { id: string; name: string; neighbourhood: string | null; city: string; lat: number; lng: number; logo_url: string | null; image_url: string | null }
+  const rows = ((data ?? []) as Row[]).map((r) => ({ id: r.id, name: r.name, area: r.neighbourhood, city: r.city, lat: r.lat, lng: r.lng, logoUrl: r.logo_url, imageUrl: r.image_url }))
+  // A fair rotation, so no featured pub is always first.
+  return rows.sort(() => Math.random() - 0.5)
+}

@@ -6,6 +6,7 @@ import { Suspense, useEffect, useState } from "react"
 import { BadgeCheck, ChevronLeft, Footprints, MapPin, Plus, ShieldAlert, TrainFront } from "lucide-react"
 import { AwardChip, BandChip } from "@/components/band-chip"
 import { PubMiniMap } from "@/components/pub/pub-mini-map"
+import { PubExtras } from "@/components/pub/pub-extras"
 import { BreakdownBars } from "@/components/pub/breakdown-bars"
 import { PubBadge } from "@/components/pub/pub-badge"
 import { RatingCard } from "@/components/pub/rating-card"
@@ -246,6 +247,7 @@ function PubPage() {
 
       <section className="mx-auto flex w-full max-w-[1440px] flex-col gap-10 px-4 py-10 md:px-8 md:py-14 lg:flex-row lg:gap-16">
         <div className="flex flex-col gap-10 lg:w-[420px] lg:shrink-0">
+          <PubExtras pubId={pub.slug} />
           {(pub.venueNote || pub.linesCleanedOn || (pub.accreditations?.length ?? 0) > 0) && (
             <div className="flex flex-col gap-3 rounded-2xl border border-border p-5">
               <h2 className="font-display text-2xl font-bold">From the pub</h2>

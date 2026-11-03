@@ -8,6 +8,7 @@ import { NotYetRatedChip } from "@/components/band-chip"
 import { FilterChips, type Filters, type SortKey } from "./filter-chips"
 import { LeagueTable, type LeagueRow } from "./league-table"
 import { LocationPicker } from "./location-picker"
+import { FeaturedStrip } from "./featured-strip"
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { PubBadge } from "@/components/pub/pub-badge"
 import { usePubs } from "@/lib/live"
@@ -181,6 +182,11 @@ export function RankingsView() {
             <p className="text-sm text-muted-foreground">Try removing 90+ only or widen the area.</p>
           </div>
         )}
+
+        <FeaturedStrip
+          city={location === "near" || location === "uk" ? undefined : (PLACES[location].city ?? (PLACES[location].hood ? "London" : undefined))}
+          origin={location === "near" ? origin : PLACES[location].hood ? sortOrigin : null}
+        />
 
         {!isDesktop && (
           <div className="flex flex-col gap-3">

@@ -5,6 +5,7 @@ import { Suspense, useEffect, useState } from "react"
 import { useSearchParams } from "next/navigation"
 import { BarChart3, Check, ClipboardCheck, MessageSquareReply, Search, Store } from "lucide-react"
 import { PubBadge } from "@/components/pub/pub-badge"
+import { PubPlanSection } from "@/components/owners/pub-plan"
 import {
   claimPub,
   loadPub,
@@ -34,7 +35,9 @@ export default function OwnersRoute() {
 
 function Owners() {
   const { session, ready } = useSession()
-  const claimId = useSearchParams().get("claim")
+  const params = useSearchParams()
+  const claimId = params.get("claim")
+  const wanted = params.get("pub")
   const [pubs, setPubs] = useState<Pub[] | null>(null)
   const [active, setActive] = useState<string | null>(null)
   useEffect(() => {
@@ -42,10 +45,10 @@ function Owners() {
     myPubs()
       .then((ps) => {
         setPubs(ps)
-        setActive(ps[0]?.slug ?? null)
+        setActive(ps.find((p) => p.slug === wanted)?.slug ?? ps[0]?.slug ?? null)
       })
       .catch(() => setPubs([]))
-  }, [session])
+  }, [session, wanted])
 
   return (
     <main className="flex flex-col">
@@ -55,7 +58,7 @@ function Owners() {
           <h1 className="font-display text-5xl font-semibold leading-[0.95] md:text-6xl">Pour a better pint. Prove it.</h1>
           <p className="max-w-2xl text-base leading-relaxed text-muted-foreground text-pretty">
             Claim your pub to keep its details right, show your cellar care, reply to drinkers and see anonymised trends in
-            your pour. It&apos;s free, and nothing here can change your score: only pints can.
+            your pour, all free. ratemyGuin for Pubs adds quality alerts, local comparisons, events and offers. Nothing here can change your score: only pints can.
           </p>
         </div>
       </section>
@@ -240,6 +243,7 @@ function Dashboard({ pub, userId }: { pub: Pub; userId: string }) {
         <InsightsCard pubId={pub.slug} />
         <VenueCard pubId={pub.slug} />
       </div>
+      <PubPlanSection pub={pub} />
       <Replies pub={pub} userId={userId} />
     </div>
   )

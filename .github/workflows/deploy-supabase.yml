@@ -48,6 +48,13 @@ jobs:
       - run: supabase db push --password "$SUPABASE_DB_PASSWORD"
       - name: Deploy the payment functions
         run: supabase functions deploy pub-plan stripe-webhook --project-ref "$PROJECT_REF" --no-verify-jwt --use-api
+      - name: Check the payment functions answer
+        run: |
+          sleep 5
+          a=$(curl -sS -o /dev/null -w '%{http_code}' -X POST "https://$PROJECT_REF.supabase.co/functions/v1/pub-plan" -H 'content-type: application/json' -d '{}')
+          b=$(curl -sS -o /dev/null -w '%{http_code}' -X POST "https://$PROJECT_REF.supabase.co/functions/v1/stripe-webhook" -d '{}')
+          echo "pub-plan without sign-in: $a (want 401); webhook without signature: $b (want 400)"
+          [ "$a" = 401 ] && [ "$b" = 400 ]
       - name: Connect Stripe
         if: env.STRIPE_SECRET_KEY != ''
         env:
