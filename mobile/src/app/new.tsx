@@ -1,8 +1,8 @@
 import { router, Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Linking, Pressable, ScrollView, View } from 'react-native';
+import { Linking, Pressable, ScrollView } from 'react-native';
 
-import { Body, Button, Card, Chip, H1, Small } from '@/components/ui';
+import { Body, Button, Card, H1, Segmented, Small } from '@/components/ui';
 import { Fonts, usePalette } from '@/constants/theme';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 
@@ -26,14 +26,23 @@ export default function NewOpenings() {
   const shown = (list ?? []).filter((o) => o.status === tab);
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: 48 }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: 48 }}>
       <Stack.Screen options={{ title: 'New openings' }} />
       <H1>New pubs, first pints</H1>
-      <View style={{ flexDirection: 'row', gap: 8 }}>
-        <Chip label="Just opened" active={tab === 'open'} onPress={() => setTab('open')} />
-        <Chip label="Coming soon" active={tab === 'coming_soon'} onPress={() => setTab('coming_soon')} />
-      </View>
+      <Segmented
+        options={[
+          { value: 'open', label: `Just opened${list ? ` (${list.filter((o) => o.status === 'open').length})` : ''}` },
+          { value: 'coming_soon', label: `Coming soon${list ? ` (${list.filter((o) => o.status === 'coming_soon').length})` : ''}` },
+        ]}
+        value={tab}
+        onChange={setTab}
+      />
       {list === null ? <Body muted>Loading…</Body> : null}
+      {list !== null && shown.length === 0 ? (
+        <Card style={{ alignItems: 'center', paddingVertical: 24 }}>
+          <Body muted style={{ textAlign: 'center' }}>{tab === 'open' ? 'No new openings right now. Check back soon.' : 'Nothing announced yet. Check back soon.'}</Body>
+        </Card>
+      ) : null}
       {shown.map((o) => (
         <Card key={o.id} style={{ gap: 6 }}>
           <Small style={{ color: c.brand, fontFamily: Fonts.bodySemi }}>

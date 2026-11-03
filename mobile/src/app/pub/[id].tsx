@@ -54,7 +54,7 @@ export default function PubProfile() {
   const ratings = ratingsFor(p.id).slice(0, 12);
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 48 }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 48 }}>
       <Stack.Screen options={{ title: p.name }} />
       <View style={{ gap: 6 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>

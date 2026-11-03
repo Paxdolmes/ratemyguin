@@ -5,7 +5,7 @@ import { BadgeCheck, Camera, MapPin } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Image, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
 
-import { Body, Button, Card, Chip, H1, ScorePicker, Small } from '@/components/ui';
+import { Body, Button, Card, Chip, H1, ScorePicker, Small, Segmented } from '@/components/ui';
 import { Fonts, usePalette } from '@/constants/theme';
 import { SUB_SCORE_LABELS, SUB_SCORES, validateRating, type SubScore } from '@/domain/scores';
 import { FEATURES, TAGS, type FeatureKey, type TagKey } from '@/domain/tags';
@@ -85,7 +85,7 @@ export default function RatePint() {
   };
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 48 }} keyboardShouldPersistTaps="handled">
+    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 48 }} keyboardShouldPersistTaps="handled">
       <View style={{ gap: 8 }}>
         <H1>{p.name}</H1>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -119,13 +119,13 @@ export default function RatePint() {
         <Body style={{ fontFamily: Fonts.bodySemi }}>Why that score?</Body>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {(Object.keys(TAGS) as TagKey[]).map((t) => (
-            <Chip key={t} label={TAGS[t].label} active={tags.includes(t)} onPress={() => setTags((xs) => flip(xs, t))} />
+            <Chip toggle key={t} label={TAGS[t].label} active={tags.includes(t)} onPress={() => setTags((xs) => flip(xs, t))} />
           ))}
         </View>
         <Body style={{ fontFamily: Fonts.bodySemi, marginTop: 6 }}>Does the pub have…</Body>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
           {(Object.keys(FEATURES) as FeatureKey[]).map((f) => (
-            <Chip key={f} label={FEATURES[f]} active={features.includes(f)} onPress={() => setFeatures((xs) => flip(xs, f))} />
+            <Chip toggle key={f} label={FEATURES[f]} active={features.includes(f)} onPress={() => setFeatures((xs) => flip(xs, f))} />
           ))}
         </View>
         <Small>Optional. Features help others filter and never change the score.</Small>
@@ -154,10 +154,14 @@ export default function RatePint() {
           {photo ? <Image source={{ uri: photo }} style={{ width: 48, height: 60, borderRadius: 8 }} /> : <Camera size={22} color={c.inkMuted} />}
           <Body muted>{photo ? 'Change photo' : 'Add a photo of your pint'}</Body>
         </Pressable>
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <Chip label="Show my name" active={!anonymous} onPress={() => setAnonymous(false)} />
-          <Chip label="Post anonymously" active={anonymous} onPress={() => setAnonymous(true)} />
-        </View>
+        <Segmented
+          options={[
+            { value: 'named', label: 'Show my name' },
+            { value: 'anon', label: 'Anonymous' },
+          ]}
+          value={anonymous ? 'anon' : 'named'}
+          onChange={(v) => setAnonymous(v === 'anon')}
+        />
       </Card>
 
       {error ? <Body style={{ color: c.danger }}>{error}</Body> : null}

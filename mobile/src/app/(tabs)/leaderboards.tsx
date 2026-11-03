@@ -3,7 +3,7 @@ import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { PubRow } from './discover';
-import { Body, Card, Chip, H1, H2, Initials, Small } from '@/components/ui';
+import { Body, Card, H1, H2, Initials, Small, Segmented } from '@/components/ui';
 import { usePalette } from '@/constants/theme';
 import { explorerPoints, rankLeaderboard, type Stamp } from '@/domain/passport';
 import { useStore } from '@/lib/store';
@@ -39,11 +39,15 @@ export default function Leaderboards() {
   return (
     <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ paddingTop: insets.top + 12, padding: 20, gap: 14 }}>
       <H1>Leaderboards</H1>
-      <View style={{ flexDirection: 'row', gap: 8 }}>
-        <Chip label="Top pubs" active={board === 'pubs'} onPress={() => setBoard('pubs')} />
-        <Chip label="Friends" active={board === 'friends'} onPress={() => setBoard('friends')} />
-        <Chip label="London explorers" active={board === 'city'} onPress={() => setBoard('city')} />
-      </View>
+      <Segmented
+        options={[
+          { value: 'pubs', label: 'Top pubs' },
+          { value: 'friends', label: 'Friends' },
+          { value: 'city', label: 'Explorers' },
+        ]}
+        value={board}
+        onChange={setBoard}
+      />
       {board === 'pubs' ? (
         <>
           <H2>London&apos;s best Guinness, {month}</H2>

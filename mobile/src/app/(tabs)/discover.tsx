@@ -1,17 +1,24 @@
 import { router } from 'expo-router';
+import { Sparkles, Tag } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Lockup } from '@/components/brand';
 import { PubMap } from '@/components/map';
-import { AwardChip, Body, Button, Chip, H1, H2, IndexScore, Initials, Small } from '@/components/ui';
+import { AwardChip, Body, Button, Chip, H1, H2, IndexScore, Initials, LinkRow, Segmented, Small } from '@/components/ui';
 import { usePalette } from '@/constants/theme';
 import { formatDistance, formatPrice, useStore, type PubWithScore } from '@/lib/store';
 
 type Sort = 'near' | 'best' | 'cheapest';
 const ATMOS = ['Any', 'Traditional', 'Cosy', 'Lively', 'Sports'] as const;
-const SCOPES = ['Near me', 'Fulham', 'London', 'United Kingdom'] as const;
+const SCOPES = ['Near me', 'London', 'United Kingdom'] as const;
+const SORTS = [
+  { value: 'best', label: 'Best rated' },
+  { value: 'near', label: 'Nearest' },
+  { value: 'cheapest', label: 'Cheapest' },
+] as const;
+const TOP_SCORE = 90; // Gold Standard and up
 
 export default function Discover() {
   const c = usePalette();
@@ -20,7 +27,7 @@ export default function Discover() {
   const [sort, setSort] = useState<Sort>('best');
   const [atmos, setAtmos] = useState<(typeof ATMOS)[number]>('Any');
   const [scope, setScope] = useState<(typeof SCOPES)[number]>('Near me');
-  const [minScore, setMinScore] = useState(0);
+  const [topOnly, setTopOnly] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const [shown, setShown] = useState(30);
   const { width } = useWindowDimensions();
@@ -29,11 +36,10 @@ export default function Discover() {
   const list = useMemo(() => {
     let l: PubWithScore[] = pubs;
     if (scope === 'Near me') l = l.filter((p) => (p.distanceM ?? 0) <= 5000);
-    else if (scope === 'Fulham') l = l.filter((p) => p.neighbourhood === 'Fulham');
     else if (scope === 'London') l = l.filter((p) => p.city === 'London');
     else l = l.filter((p) => p.country === 'United Kingdom');
     if (atmos !== 'Any') l = l.filter((p) => p.atmosphere === atmos);
-    if (minScore) l = l.filter((p) => (p.score.index ?? 0) >= minScore);
+    if (topOnly) l = l.filter((p) => (p.score.index ?? 0) >= TOP_SCORE);
     return [...l].sort((a, b) =>
       sort === 'near'
         ? (a.distanceM ?? 0) - (b.distanceM ?? 0)
@@ -41,26 +47,36 @@ export default function Discover() {
           ? (a.score.medianPricePence ?? 9999) - (b.score.medianPricePence ?? 9999)
           : (b.score.index ?? -1) - (a.score.index ?? -1),
     );
-  }, [pubs, sort, atmos, scope, minScore]);
+  }, [pubs, sort, atmos, scope, topOnly]);
 
   const rated = list.filter((p) => p.score.index != null).length;
   const map = <PubMap pubs={list} here={here} height={wide ? '100%' : 360} onPick={(id) => router.push(`/pub/${id}`)} />;
 
+  const filtering = topOnly || atmos !== 'Any';
   const filters = (
-    <View style={{ gap: 10 }}>
+    <View style={{ gap: 12 }}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
         {SCOPES.map((s) => (
           <Chip key={s} label={s} active={scope === s} onPress={() => setScope(s)} />
         ))}
       </ScrollView>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
-        <Chip label="Best rated" active={sort === 'best'} onPress={() => setSort('best')} />
-        <Chip label="Nearest" active={sort === 'near'} onPress={() => setSort('near')} />
-        <Chip label="Cheapest" active={sort === 'cheapest'} onPress={() => setSort('cheapest')} />
-        <Chip label={minScore ? '90+ only' : 'Any score'} active={minScore > 0} onPress={() => setMinScore(minScore ? 0 : 90)} />
+      <Segmented options={SORTS} value={sort} onChange={setSort} />
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, alignItems: 'center' }}>
+        <Chip toggle label="Gold Standard 90+" active={topOnly} onPress={() => setTopOnly(!topOnly)} />
         {ATMOS.slice(1).map((a) => (
-          <Chip key={a} label={a} active={atmos === a} onPress={() => setAtmos(atmos === a ? 'Any' : a)} />
+          <Chip toggle key={a} label={a} active={atmos === a} onPress={() => setAtmos(atmos === a ? 'Any' : a)} />
         ))}
+        {filtering ? (
+          <Pressable
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={() => {
+              setTopOnly(false);
+              setAtmos('Any');
+            }}>
+            <Small style={{ color: c.brand, fontFamily: 'Jost_600SemiBold', paddingHorizontal: 4 }}>Clear</Small>
+          </Pressable>
+        ) : null}
       </ScrollView>
     </View>
   );
@@ -92,11 +108,10 @@ export default function Discover() {
   const header = (
     <View style={{ gap: 4 }}>
       <Lockup />
-      <Small style={{ marginTop: 10 }}>Fulham, London</Small>
-      <H1>The best pint near you</H1>
-      <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
-        <Chip label="Offers near me" onPress={() => router.push('/offers')} />
-        <Chip label="New openings" onPress={() => router.push('/new')} />
+      <H1 style={{ marginTop: 12 }}>The best pint near you</H1>
+      <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+        <LinkRow label="Offers" hint="Deals near you" icon={<Tag size={18} color={c.brand} />} onPress={() => router.push('/offers')} />
+        <LinkRow label="New pubs" hint="Just opened" icon={<Sparkles size={18} color={c.brand} />} onPress={() => router.push('/new')} />
       </View>
     </View>
   );

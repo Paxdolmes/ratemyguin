@@ -161,7 +161,7 @@ export default function SignIn() {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 24, gap: 14 }} keyboardShouldPersistTaps="handled">
+    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 24, gap: 14 }} keyboardShouldPersistTaps="handled">
       <Lockup pubs={appVariant === 'pubs'} />
       <View style={{ gap: 6, marginTop: 12 }}>
         <H1>{title}</H1>

@@ -3,7 +3,7 @@ import { Footprints, Tag } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Linking, Pressable, ScrollView, View } from 'react-native';
 
-import { Body, Card, Chip, H1, Small } from '@/components/ui';
+import { Body, Card, H1, Segmented, Small } from '@/components/ui';
 import { Fonts, usePalette } from '@/constants/theme';
 import { useStore } from '@/lib/store';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
@@ -29,17 +29,19 @@ export default function Offers() {
   }, [here.lat, here.lng, radius]);
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: 48 }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 20, gap: 12, paddingBottom: 48 }}>
       <Stack.Screen options={{ title: 'Offers near me' }} />
       <H1>Deals from pubs nearby</H1>
       <Small>Posted by pubs or found on their own websites. Offers never affect the rankings.</Small>
-      <View style={{ flexDirection: 'row', gap: 8 }}>
-        {RADII.map((r) => (
-          <Chip key={r} label={`${r / 1000} km`} active={radius === r} onPress={() => setRadius(r)} />
-        ))}
-      </View>
+      <Small style={{ fontFamily: Fonts.bodySemi, color: c.ink }}>How far will you go?</Small>
+      <Segmented options={RADII.map((r) => ({ value: String(r), label: `${r / 1000} km` }))} value={String(radius)} onChange={(v) => setRadius(Number(v))} />
       {offers === null ? <Body muted>Loading…</Body> : null}
-      {offers?.length === 0 ? <Body muted>No offers nearby yet. Try a wider radius.</Body> : null}
+      {offers?.length === 0 ? (
+        <Card style={{ alignItems: 'center', gap: 6, paddingVertical: 24 }}>
+          <Tag size={22} color={c.inkSubtle} />
+          <Body muted style={{ textAlign: 'center' }}>{radius < 10000 ? 'No offers this close yet. Try a wider distance.' : 'No offers nearby yet. Check back soon.'}</Body>
+        </Card>
+      ) : null}
       {offers?.map((o) => (
         <Pressable key={o.id} onPress={() => router.push(`/pub/${o.pub_id}`)}>
           <Card style={{ flexDirection: 'row', gap: 10 }}>

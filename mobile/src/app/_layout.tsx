@@ -53,7 +53,7 @@ export default function RootLayout() {
     <AuthProvider>
       <StoreProvider>
         <ThemeProvider value={theme}>
-          <Stack screenOptions={{ headerShadowVisible: false, headerTitleStyle: { fontFamily: 'Jost_600SemiBold' }, headerBackButtonDisplayMode: 'minimal' }}>
+          <Stack screenOptions={{ headerShadowVisible: false, headerStyle: { backgroundColor: c.bg }, headerTintColor: c.ink, headerTitleStyle: { fontFamily: 'Jost_600SemiBold' }, headerBackButtonDisplayMode: 'minimal' }}>
             <Stack.Screen name="index" options={{ headerShown: false }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="pubs" options={{ headerShown: false }} />

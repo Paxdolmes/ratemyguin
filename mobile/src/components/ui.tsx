@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View, type StyleProp, type TextStyle, type ViewStyle } from 'react-native';
 
+import { Check, ChevronRight } from 'lucide-react-native';
+
 import { Fonts, Radius, usePalette } from '@/constants/theme';
 import { AWARDS, type AwardTier } from '@/domain/scores';
 
@@ -56,13 +58,61 @@ export function Button({ label, onPress, kind = 'primary', disabled, style }: { 
   );
 }
 
-export function Chip({ label, active, onPress, tone }: { label: string; active?: boolean; onPress?: () => void; tone?: 'success' }) {
+/** A pill. With `toggle`, it shows a tick when on, so it's clear a second tap turns it off. */
+export function Chip({ label, active, onPress, tone, toggle }: { label: string; active?: boolean; onPress?: () => void; tone?: 'success'; toggle?: boolean }) {
   const c = usePalette();
   const bg = tone === 'success' ? c.successTint : active ? c.ink : c.surfaceMuted;
   const fg = tone === 'success' ? c.success : active ? c.bg : c.ink;
   return (
-    <Pressable onPress={onPress} disabled={!onPress} style={{ backgroundColor: bg, borderRadius: Radius.pill, paddingHorizontal: 12, paddingVertical: 7 }}>
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
+      accessibilityRole={toggle ? 'checkbox' : 'button'}
+      accessibilityState={toggle ? { checked: Boolean(active) } : { selected: Boolean(active) }}
+      hitSlop={6}
+      style={{ backgroundColor: bg, borderRadius: Radius.pill, paddingHorizontal: 13, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+      {toggle && active ? <Check size={14} color={fg} strokeWidth={3} /> : null}
       <Text style={{ fontFamily: Fonts.bodySemi, fontSize: 13, color: fg }}>{label}</Text>
+    </Pressable>
+  );
+}
+
+/** Pick exactly one option, like iOS's segmented control. */
+export function Segmented<T extends string>({ options, value, onChange }: { options: readonly { value: T; label: string }[]; value: T; onChange: (v: T) => void }) {
+  const c = usePalette();
+  return (
+    <View accessibilityRole="tablist" style={{ flexDirection: 'row', backgroundColor: c.surfaceMuted, borderRadius: Radius.pill, padding: 3 }}>
+      {options.map((o) => {
+        const on = o.value === value;
+        return (
+          <Pressable
+            key={o.value}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: on }}
+            onPress={() => onChange(o.value)}
+            style={{ flex: 1, alignItems: 'center', paddingVertical: 8, borderRadius: Radius.pill, backgroundColor: on ? c.surface : 'transparent', borderWidth: on ? StyleSheet.hairlineWidth : 0, borderColor: c.border }}>
+            <Text style={{ fontFamily: Fonts.bodySemi, fontSize: 14, color: on ? c.ink : c.inkMuted }}>{o.label}</Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+/** A tappable row that goes somewhere, e.g. Offers near me. */
+export function LinkRow({ label, hint, icon, onPress }: { label: string; hint?: string; icon?: ReactNode; onPress: () => void }) {
+  const c = usePalette();
+  return (
+    <Pressable
+      accessibilityRole="link"
+      onPress={onPress}
+      style={({ pressed }) => ({ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: pressed ? c.surfaceMuted : c.surface, borderRadius: Radius.lg, padding: 12, borderWidth: StyleSheet.hairlineWidth, borderColor: c.border })}>
+      {icon}
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontFamily: Fonts.bodySemi, fontSize: 14, color: c.ink }} numberOfLines={1}>{label}</Text>
+        {hint ? <Text style={{ fontFamily: Fonts.body, fontSize: 12, color: c.inkMuted }} numberOfLines={1}>{hint}</Text> : null}
+      </View>
+      <ChevronRight size={16} color={c.inkSubtle} />
     </Pressable>
   );
 }
