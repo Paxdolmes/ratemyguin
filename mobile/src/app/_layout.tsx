@@ -21,7 +21,7 @@ export function ErrorBoundary({ error, retry }: { error: Error; retry: () => Pro
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, padding: 24, backgroundColor: '#FBF8F1' }}>
       <Text style={{ fontSize: 22, fontWeight: '600', color: '#17110D' }}>Something went wrong</Text>
-      <Text style={{ color: '#5b5048', textAlign: 'center' }}>We've been told about it. Try again in a moment.</Text>
+      <Text style={{ color: '#5b5048', textAlign: 'center' }}>{"We've been told about it. Try again in a moment."}</Text>
       <Pressable accessibilityRole="button" onPress={() => void retry()} style={{ backgroundColor: '#17110D', borderRadius: 999, paddingHorizontal: 20, paddingVertical: 12 }}>
         <Text style={{ color: '#F6EEDC', fontWeight: '600' }}>Try again</Text>
       </Pressable>

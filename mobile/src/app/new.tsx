@@ -14,9 +14,9 @@ type Opening = {
 export default function NewOpenings() {
   const c = usePalette();
   const [tab, setTab] = useState<'open' | 'coming_soon'>('open');
-  const [list, setList] = useState<Opening[] | null>(null);
+  const [list, setList] = useState<Opening[] | null>(isSupabaseConfigured ? null : []);
   useEffect(() => {
-    if (!isSupabaseConfigured) return setList([]);
+    if (!isSupabaseConfigured) return;
     supabase
       .from('openings')
       .select('id,name,address,neighbourhood,status,opened_label,blurb,source_name,source_url,pub_id')

@@ -20,10 +20,9 @@ export default function Offers() {
   const c = usePalette();
   const { here } = useStore();
   const [radius, setRadius] = useState(3000);
-  const [offers, setOffers] = useState<Offer[] | null>(null);
+  const [offers, setOffers] = useState<Offer[] | null>(isSupabaseConfigured ? null : []);
   useEffect(() => {
-    if (!isSupabaseConfigured) return setOffers([]);
-    setOffers(null);
+    if (!isSupabaseConfigured) return;
     supabase
       .rpc('offers_near', { p_lat: here.lat, p_lng: here.lng, p_metres: radius })
       .then(({ data }) => setOffers((data ?? []) as Offer[]), () => setOffers([]));
@@ -59,7 +58,7 @@ export default function Offers() {
               </View>
               {o.source === 'web' && o.source_url ? (
                 <Pressable onPress={() => void Linking.openURL(o.source_url!)} hitSlop={6}>
-                  <Small>Found on the pub's website. Check with the pub before you go.</Small>
+                  <Small>{"Found on the pub's website. Check with the pub before you go."}</Small>
                 </Pressable>
               ) : null}
             </View>

@@ -89,7 +89,7 @@ export default function SignIn() {
             />
           ))}
         </View>
-        {dob.y.length === 4 && !adult ? <Small>Sorry, ratemyGuin is only for people aged 18 and over.</Small> : <Small>We only check you're 18 or over. We don't keep your date of birth.</Small>}
+        {dob.y.length === 4 && !adult ? <Small>Sorry, ratemyGuin is only for people aged 18 and over.</Small> : <Small>{"We only check you're 18 or over. We don't keep your date of birth."}</Small>}
         <Small>
           By continuing you agree to our{' '}
           <Text style={{ color: c.brand }} onPress={() => void Linking.openURL('https://ratemyguin.com/terms/')}>terms</Text> and{' '}
