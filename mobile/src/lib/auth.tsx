@@ -88,15 +88,37 @@ export async function verifyCode(email: string, token: string) {
   if (error) throw error;
 }
 
+/** Password sign-in, only for the App Store review account (everyone else gets a code). */
+export async function signInWithPassword(email: string, password: string) {
+  const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+  if (error) throw new Error(error.message === 'Invalid login credentials' ? "That email and password don't match." : error.message);
+}
+
 export const handleProblem = (h: string) =>
   /^[a-z0-9_]{3,20}$/.test(h) ? null : 'Use 3 to 20 lower-case letters, numbers or underscores.';
 
 export async function createProfile(handle: string, displayName: string) {
   const { data } = await supabase.auth.getUser();
   if (!data.user) throw new Error('Please sign in again.');
-  const { error } = await supabase.from('profiles').insert({ id: data.user.id, handle: handle.trim().toLowerCase(), display_name: displayName.trim() });
+  const { error } = await supabase.from('profiles').insert({
+    id: data.user.id,
+    handle: handle.trim().toLowerCase(),
+    display_name: displayName.trim(),
+    adult_confirmed_at: new Date().toISOString(),
+  });
   if (error?.code === '23505') throw new Error('That handle is taken. Try another.');
   if (error) throw error;
+}
+
+/** Removes the person's photos, then their account and everything linked to it. */
+export async function deleteAccount() {
+  const { data } = await supabase.auth.getUser();
+  if (!data.user) throw new Error('Please sign in again.');
+  const { data: files } = await supabase.storage.from('pint-photos').list(data.user.id, { limit: 1000 });
+  if (files?.length) await supabase.storage.from('pint-photos').remove(files.map((f) => `${data.user!.id}/${f.name}`));
+  const { error } = await supabase.rpc('delete_my_account');
+  if (error) throw error;
+  await supabase.auth.signOut();
 }
 
 export async function signOut() {

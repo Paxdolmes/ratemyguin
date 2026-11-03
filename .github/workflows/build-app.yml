@@ -1,0 +1,128 @@
+name: Build test app
+
+# Builds an installable test app on Expo (EAS). Needs the EXPO_TOKEN repository secret.
+# Android: an .apk download link. iPhone: a store build sent to TestFlight, which needs
+# App Store Connect API key secrets ASC_API_KEY_P8, ASC_KEY_ID, ASC_ISSUER_ID, APPLE_TEAM_ID
+# (and ASC_APP_ID once the app exists in App Store Connect, to upload to TestFlight).
+
+on:
+  workflow_dispatch:
+    inputs:
+      app:
+        description: Which app
+        type: choice
+        options: [drinkers, pubs]
+        default: drinkers
+      platform:
+        description: Phone type
+        type: choice
+        options: [android, ios]
+        default: ios
+      only_check:
+        description: Don't build, just show the latest builds and their status
+        type: boolean
+        default: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      APP_VARIANT: ${{ inputs.app || 'drinkers' }}
+      PLATFORM: ${{ inputs.platform || 'ios' }}
+      ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
+      EXPO_ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      EXPO_ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      EXPO_APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      EXPO_APPLE_TEAM_TYPE: ${{ vars.APPLE_TEAM_TYPE || 'INDIVIDUAL' }}
+      ASC_APP_ID: ${{ secrets.ASC_APP_ID }}
+    steps:
+      - name: Check the Expo token is set
+        working-directory: .
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::Add an EXPO_TOKEN repository secret (expo.dev > Settings > Access tokens)."
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci
+      - name: Who am I on Expo
+        run: npx --yes eas-cli@latest whoami
+      - name: Latest builds
+        if: inputs.only_check
+        run: |
+          npx --yes eas-cli@latest build:list --limit 3 --json --non-interactive \
+            | jq -r '.[] | "BUILD \(.platform) \(.appBuildVersion // "?") \(.status) \(.error.message // "") https://expo.dev/accounts/ratemyguin/projects/ratemyguin/builds/\(.id)"'
+          # Uploads to Apple (Expo submissions)
+          pid=$(node -e "console.log(require('@expo/config').getConfig('.',{skipSDKVersionRequirement:true}).exp.extra.eas.projectId)")
+          q='query($id:String!){app{byId(appId:$id){submissions(offset:0,limit:3,filter:{platform:IOS}){id status createdAt error{errorCode message}}}}}'
+          curl -sS https://api.expo.dev/graphql -H "Authorization: Bearer $EXPO_TOKEN" -H 'content-type: application/json' \
+            -d "$(jq -n --arg q "$q" --arg id "$pid" '{query:$q,variables:{id:$id}}')" \
+            | jq -r '(.errors // [] | .[] | "SUBMIT-QUERY-ERROR \(.message)"), (.data.app.byId.submissions // [] | .[] | "SUBMIT \(.createdAt) \(.status) \(.error.errorCode // "") \(.error.message // "")")'
+          # What App Store Connect has (needs ASC secrets)
+          if [ -n "$ASC_API_KEY_P8" ] && [ -n "$ASC_APP_ID" ]; then
+            key=$(printf '%s' "$ASC_API_KEY_P8" | tr -d '\r'); body=$(printf '%s' "$key" | sed -e 's/-----BEGIN PRIVATE KEY-----//' -e 's/-----END PRIVATE KEY-----//' | tr -d ' \n\t')
+            { echo "-----BEGIN PRIVATE KEY-----"; printf '%s' "$body" | fold -w 64; echo; echo "-----END PRIVATE KEY-----"; } > "$RUNNER_TEMP/asc.p8"
+            jwt=$(KEYFILE="$RUNNER_TEMP/asc.p8" node -e "
+              const c=require('crypto'),fs=require('fs');const b=x=>Buffer.from(JSON.stringify(x)).toString('base64url');
+              const h=b({alg:'ES256',kid:process.env.EXPO_ASC_KEY_ID,typ:'JWT'}),p=b({iss:process.env.EXPO_ASC_ISSUER_ID,iat:Math.floor(Date.now()/1000),exp:Math.floor(Date.now()/1000)+600,aud:'appstoreconnect-v1'});
+              const s=c.sign('sha256',Buffer.from(h+'.'+p),{key:fs.readFileSync(process.env.KEYFILE),dsaEncoding:'ieee-p1363'}).toString('base64url');console.log(h+'.'+p+'.'+s)")
+            curl -sS -g "https://api.appstoreconnect.apple.com/v1/builds?filter[app]=$ASC_APP_ID&sort=-uploadedDate&limit=3" -H "Authorization: Bearer $jwt" \
+              | jq -r '(.errors // [] | .[] | "ASC-ERROR \(.title) \(.detail)"), (.data // [] | .[] | "ASC-BUILD \(.attributes.version) \(.attributes.processingState) uploaded \(.attributes.uploadedDate) expired=\(.attributes.expired)")'
+          fi
+          exit 0
+      - name: Link the Expo project if it isn't yet
+        if: ${{ !inputs.only_check }}
+        run: |
+          if ! node -e "const c=require('@expo/config').getConfig('.',{skipSDKVersionRequirement:true}).exp; process.exit(c.extra?.eas?.projectId?0:1)"; then
+            npx --yes eas-cli@latest init --non-interactive --force || true
+            npx --yes eas-cli@latest project:info || true
+            echo "::error::Expo project for $APP_VARIANT isn't linked in app.config.ts yet. Copy the project ID printed above into it."
+            exit 1
+          fi
+      - name: Set up Apple signing
+        if: env.PLATFORM == 'ios' && !inputs.only_check
+        run: |
+          for v in ASC_API_KEY_P8 EXPO_ASC_KEY_ID EXPO_ASC_ISSUER_ID EXPO_APPLE_TEAM_ID; do
+            if [ -z "${!v}" ]; then echo "::error::Missing secret for $v (see the top of this workflow)."; exit 1; fi
+          done
+          # Tidy the pasted key: Windows line endings, or the whole key pasted on one line.
+          key=$(printf '%s' "$ASC_API_KEY_P8" | tr -d '\r')
+          body=$(printf '%s' "$key" | sed -e 's/-----BEGIN PRIVATE KEY-----//' -e 's/-----END PRIVATE KEY-----//' | tr -d ' \n\t')
+          { echo "-----BEGIN PRIVATE KEY-----"; printf '%s' "$body" | fold -w 64; echo; echo "-----END PRIVATE KEY-----"; } > "$RUNNER_TEMP/asc.p8"
+          if ! openssl pkey -in "$RUNNER_TEMP/asc.p8" -noout 2>/dev/null; then
+            echo "::error::ASC_API_KEY_P8 isn't a valid key ($(wc -l < "$RUNNER_TEMP/asc.p8") lines, ${#body} characters of key). Paste the whole .p8 file again."
+            exit 1
+          fi
+          echo "EXPO_ASC_API_KEY_PATH=$RUNNER_TEMP/asc.p8" >> "$GITHUB_ENV"
+      - name: Build
+        if: ${{ !inputs.only_check }}
+        run: |
+          if [ "$PLATFORM" = ios ]; then profile=production; else profile=preview; fi
+          [ "$APP_VARIANT" = pubs ] && profile="$profile-pubs"
+          export profile
+          submit=""
+          if [ "$PLATFORM" = ios ] && [ -n "$ASC_APP_ID" ]; then
+            jq --arg id "$ASC_APP_ID" --arg key "$EXPO_ASC_API_KEY_PATH" --arg kid "$EXPO_ASC_KEY_ID" --arg iss "$EXPO_ASC_ISSUER_ID" \
+              '.submit = {($ENV.profile): {ios: {ascAppId: $id, ascApiKeyPath: $key, ascApiKeyId: $kid, ascApiKeyIssuerId: $iss}}}' eas.json > eas.tmp && mv eas.tmp eas.json
+            submit="--auto-submit"
+          fi
+          if npx --yes eas-cli@latest build --platform "$PLATFORM" --profile "$profile" --non-interactive --no-wait $submit 2>&1 | tee build.log; then
+            grep -q "build command failed" build.log || exit 0
+          fi
+          grep -q "Credentials are not set up" build.log || exit 1
+          # First iPhone build: Expo only makes the Apple signing certificate and profile
+          # interactively, so answer its prompts with the default (yes) through a fake terminal.
+          # It uses the App Store Connect API key, then keeps the credentials for later builds.
+          echo "Setting up Apple signing for the first time"
+          export EAS_BUILD_NO_EXPO_GO_WARNING=true
+          timeout 900 env -u CI -u GITHUB_ACTIONS -u CONTINUOUS_INTEGRATION -u BUILD_NUMBER -u RUN_ID script -qefc "npx --yes eas-cli@latest build --platform $PLATFORM --profile $profile --no-wait $submit" /dev/null < <(while sleep 3; do printf '\r'; done) | tee setup.log
+          grep -qiE "build details|builds/|Build queued" setup.log

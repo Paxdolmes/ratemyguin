@@ -1,12 +1,13 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, TextInput, View } from 'react-native';
+import { Linking, ScrollView, Text, TextInput, View } from 'react-native';
 
 import { Lockup } from '@/components/brand';
 import { Body, Button, H1, Small } from '@/components/ui';
 import { Fonts, usePalette } from '@/constants/theme';
-import { createProfile, handleProblem, isEmail, sendCode, useAuth, verifyCode } from '@/lib/auth';
+import { createProfile, handleProblem, isEmail, sendCode, signInWithPassword, useAuth, verifyCode } from '@/lib/auth';
 import { appVariant } from '@/lib/variant';
+import { isAdult } from '@/domain/age';
 
 const RESEND_AFTER_S = 60; // Supabase allows one code per email a minute
 
@@ -21,9 +22,13 @@ export default function SignIn() {
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
   const [handle, setHandle] = useState('');
+  const [dob, setDob] = useState({ d: '', m: '', y: '' });
+  const adult = isAdult(Number(dob.y), Number(dob.m), Number(dob.d));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [wait, setWait] = useState(0);
+  const [withPassword, setWithPassword] = useState(false);
+  const [password, setPassword] = useState('');
 
   // Signed in: go back to what they were doing, e.g. the rating they were posting.
   useEffect(() => {
@@ -64,9 +69,37 @@ export default function SignIn() {
         <TextInput value={name} onChangeText={setName} placeholder="Your name" placeholderTextColor={c.inkSubtle} autoComplete="name" style={field} />
         <TextInput value={handle} onChangeText={(t) => setHandle(t.toLowerCase())} placeholder="handle" placeholderTextColor={c.inkSubtle} autoCapitalize="none" autoCorrect={false} style={field} />
         {problem ? <Small>{problem}</Small> : null}
+        <Body style={{ fontFamily: Fonts.bodySemi }}>Date of birth</Body>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          {(
+            [
+              ['d', 'DD', 2],
+              ['m', 'MM', 2],
+              ['y', 'YYYY', 4],
+            ] as const
+          ).map(([k, ph, len]) => (
+            <TextInput
+              key={k}
+              value={dob[k]}
+              onChangeText={(t) => setDob({ ...dob, [k]: t.replace(/\D/g, '').slice(0, len) })}
+              placeholder={ph}
+              placeholderTextColor={c.inkSubtle}
+              keyboardType="number-pad"
+              maxLength={len}
+              accessibilityLabel={k === 'd' ? 'Day of birth' : k === 'm' ? 'Month of birth' : 'Year of birth'}
+              style={[field, { flex: len === 4 ? 2 : 1, textAlign: 'center' }]}
+            />
+          ))}
+        </View>
+        {dob.y.length === 4 && !adult ? <Small>Sorry, ratemyGuin is only for people aged 18 and over.</Small> : <Small>{"We only check you're 18 or over. We don't keep your date of birth."}</Small>}
+        <Small>
+          By continuing you agree to our{' '}
+          <Text style={{ color: c.brand }} onPress={() => void Linking.openURL('https://ratemyguin.com/terms/')}>terms</Text> and{' '}
+          <Text style={{ color: c.brand }} onPress={() => void Linking.openURL('https://ratemyguin.com/privacy/')}>privacy policy</Text>.
+        </Small>
         <Button
           label="Continue"
-          disabled={busy || name.trim().length < 2 || !handle || Boolean(problem)}
+          disabled={busy || name.trim().length < 2 || !handle || Boolean(problem) || !adult}
           onPress={() =>
             run(async () => {
               await createProfile(handle, name);
@@ -102,23 +135,33 @@ export default function SignIn() {
     content = (
       <>
         <TextInput value={email} onChangeText={setEmail} placeholder="you@example.com" placeholderTextColor={c.inkSubtle} keyboardType="email-address" autoCapitalize="none" autoComplete="email" style={field} />
-        <Button
-          label="Email me a code"
-          disabled={busy || !isEmail(email)}
-          onPress={() =>
-            run(async () => {
-              await sendCode(email);
-              setSentTo(email.trim().toLowerCase());
-              setWait(RESEND_AFTER_S);
-            })
-          }
-        />
+        {withPassword ? (
+          <>
+            <TextInput value={password} onChangeText={setPassword} placeholder="Password" placeholderTextColor={c.inkSubtle} secureTextEntry autoCapitalize="none" autoComplete="password" style={field} />
+            <Button label="Sign in" disabled={busy || !isEmail(email) || !password} onPress={() => run(() => signInWithPassword(email, password))} />
+          </>
+        ) : (
+          <Button
+            label="Email me a code"
+            disabled={busy || !isEmail(email)}
+            onPress={() =>
+              run(async () => {
+                await sendCode(email);
+                setSentTo(email.trim().toLowerCase());
+                setWait(RESEND_AFTER_S);
+              })
+            }
+          />
+        )}
+        <Text style={{ fontFamily: Fonts.bodySemi, color: c.inkSubtle, textAlign: 'center' }} onPress={() => setWithPassword(!withPassword)}>
+          {withPassword ? 'Email me a code instead' : 'Sign in with a password'}
+        </Text>
       </>
     );
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 24, gap: 14 }} keyboardShouldPersistTaps="handled">
+    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 24, gap: 14 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
       <Lockup pubs={appVariant === 'pubs'} />
       <View style={{ gap: 6, marginTop: 12 }}>
         <H1>{title}</H1>
@@ -126,7 +169,7 @@ export default function SignIn() {
       </View>
       {content}
       {error ? <Body style={{ color: c.danger }}>{error}</Body> : null}
-      <Small>You must be 18 or over to use RateMyGuin.</Small>
+      <Small>You must be 18 or over to use ratemyGuin.</Small>
     </ScrollView>
   );
 }

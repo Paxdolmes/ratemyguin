@@ -1,2 +1,9 @@
 # Supabase CLI settings for RateMyGuin.
 project_id = "ratemyguin"
+
+# Payment functions check the signed-in user (or Stripe's signature) themselves.
+[functions.pub-plan]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false

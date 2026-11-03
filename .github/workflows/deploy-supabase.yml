@@ -15,6 +15,10 @@ on:
       test_email:
         description: Optional. Send a sign-in code to this address after deploying, to check email works.
         required: false
+      reconnect_stripe:
+        description: Re-create the Stripe webhook (only needed if payments stop updating plans).
+        type: boolean
+        default: false
 
 concurrency: deploy-supabase
 
@@ -27,6 +31,10 @@ jobs:
       PROJECT_REF: yhttayboxljswczexspg
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
       EMAIL_FROM: ${{ vars.EMAIL_FROM || 'codes@mail.ratemyguin.com' }}
+      # Optional: STRIPE_SECRET_KEY (sk_test_… or sk_live_…) switches on pub plan payments.
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+      # Optional: APP_REVIEW_PASSWORD (10+ characters) sets up review@ratemyguin.com for Apple's reviewers.
+      APP_REVIEW_PASSWORD: ${{ secrets.APP_REVIEW_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
       - name: Check the secrets are set
@@ -40,6 +48,53 @@ jobs:
           version: 2.120.0
       - run: supabase link --project-ref "$PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
       - run: supabase db push --password "$SUPABASE_DB_PASSWORD"
+      - name: Deploy the payment functions
+        run: supabase functions deploy pub-plan stripe-webhook --project-ref "$PROJECT_REF" --no-verify-jwt --use-api
+      - name: Check the payment functions answer
+        run: |
+          sleep 5
+          a=$(curl -sS -o /dev/null -w '%{http_code}' -X POST "https://$PROJECT_REF.supabase.co/functions/v1/pub-plan" -H 'content-type: application/json' -d '{}')
+          b=$(curl -sS -o /dev/null -w '%{http_code}' -X POST "https://$PROJECT_REF.supabase.co/functions/v1/stripe-webhook" -d '{}')
+          echo "pub-plan without sign-in: $a (want 401); webhook without signature: $b (want 400)"
+          [ "$a" = 401 ] && [ "$b" = 400 ]
+      - name: Connect Stripe
+        if: env.STRIPE_SECRET_KEY != ''
+        env:
+          RECONNECT: ${{ inputs.reconnect_stripe }}
+        run: |
+          url="https://$PROJECT_REF.supabase.co/functions/v1/stripe-webhook"
+          if supabase secrets list --project-ref "$PROJECT_REF" | grep -q STRIPE_WEBHOOK_SECRET && [ "$RECONNECT" != "true" ]; then
+            supabase secrets set --project-ref "$PROJECT_REF" STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY"
+            echo "Stripe already connected"; exit 0
+          fi
+          for id in $(curl -sS -u "$STRIPE_SECRET_KEY:" "https://api.stripe.com/v1/webhook_endpoints?limit=100" | jq -r --arg u "$url" '.data[] | select(.url == $u) | .id'); do
+            curl -sS -u "$STRIPE_SECRET_KEY:" -X DELETE "https://api.stripe.com/v1/webhook_endpoints/$id" > /dev/null
+          done
+          secret=$(curl -sS -u "$STRIPE_SECRET_KEY:" https://api.stripe.com/v1/webhook_endpoints -d url="$url" \
+            -d 'enabled_events[]=checkout.session.completed' -d 'enabled_events[]=customer.subscription.created' \
+            -d 'enabled_events[]=customer.subscription.updated' -d 'enabled_events[]=customer.subscription.deleted' \
+            -d 'description=ratemyGuin pub plans' | jq -r '.secret // empty')
+          if [ -z "$secret" ]; then echo "::error::Stripe did not create the webhook. Check STRIPE_SECRET_KEY."; exit 1; fi
+          echo "::add-mask::$secret"
+          supabase secrets set --project-ref "$PROJECT_REF" STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY" STRIPE_WEBHOOK_SECRET="$secret"
+          echo "Stripe connected"
+      - name: Set up the App Store review account
+        if: env.APP_REVIEW_PASSWORD != ''
+        env:
+          KEY: sb_publishable_8aeFY-i4xdQPbQ7kA_BRjA_WfoJR18a
+          REVIEW_EMAIL: review@ratemyguin.com
+        run: |
+          pw=${APP_REVIEW_PASSWORD//\'/\'\'}  # escape quotes for SQL
+          q="select private.setup_review_account('$REVIEW_EMAIL', '$pw') as id"
+          curl -sS -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" \
+            -d "$(jq -n --arg q "$q" '{query: $q}')" > review.json
+          jq -e '.[0].id' review.json > /dev/null || { echo "::error::Review account not set up: $(cat review.json)"; exit 1; }
+          status=$(curl -sS -o signin.json -w '%{http_code}' -X POST "https://$PROJECT_REF.supabase.co/auth/v1/token?grant_type=password" \
+            -H "apikey: $KEY" -H "Content-Type: application/json" \
+            -d "$(jq -n --arg e "$REVIEW_EMAIL" --arg p "$APP_REVIEW_PASSWORD" '{email: $e, password: $p}')")
+          if [ "$status" != 200 ]; then echo "::error::Review account can't sign in ($status): $(jq -c '{error, error_description, msg}' signin.json)"; exit 1; fi
+          echo "Review account ready: $REVIEW_EMAIL signs in with the APP_REVIEW_PASSWORD secret"
       - name: Send sign-in emails through Resend
         if: env.RESEND_API_KEY != ''
         run: |

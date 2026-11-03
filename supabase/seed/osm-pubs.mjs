@@ -57,16 +57,32 @@ for (const el of elements) {
   const street = [t['addr:housenumber'], t['addr:street']].filter(Boolean).join(' ');
   const address = street || t['addr:place'] || t['addr:postcode'] || area.city;
   const hood = t['addr:suburb'] || t['addr:district'] || t['addr:neighbourhood'] || null;
-  rows.push(`(${q(t.name)}, ${q(address)}, ${q(hood)}, ${q(area.city)}, ${q(area.country)}, 'SRID=4326;POINT(${lon} ${lat})', ${q(`${el.type}/${el.id}`)}, ${q(t.opening_hours)})`);
+  const website = t.website || t['contact:website'] || null;
+  const brand = t.brand || t.operator || null;
+  const commons = t.wikimedia_commons?.startsWith('File:') ? `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(t.wikimedia_commons.slice(5))}?width=800` : null;
+  const image = t.image?.startsWith('http') ? t.image : commons;
+  const yes = (k) => t[k] && t[k] !== 'no';
+  const features = [
+    (yes('beer_garden') || t.outdoor_seating === 'yes' || t.garden === 'yes') && 'beer_garden',
+    (yes('food') || t.cuisine || t.kitchen === 'yes') && 'food',
+    (t.tv === 'yes' || yes('sport:tv') || /football|soccer|rugby/.test(t.sport ?? '')) && 'sport',
+    (t.music === 'no' || t.tv === 'no') && 'quiet',
+    t.wheelchair === 'yes' && 'step_free',
+  ].filter(Boolean);
+  const opened = /^\d{4}(-\d{2}(-\d{2})?)?$/.test(t.start_date ?? '') ? `${t.start_date}-01-01`.slice(0, 10) : null;
+  rows.push(`(${q(t.name)}, ${q(address)}, ${q(hood)}, ${q(area.city)}, ${q(area.country)}, 'SRID=4326;POINT(${lon} ${lat})', ${q(`${el.type}/${el.id}`)}, ${q(t.opening_hours)}, ${q(website)}, ${q(brand)}, ${q(t['brand:wikidata'])}, ${q(image)}, array[${features.map(q).join(',')}]::text[], ${q(opened)})`);
 }
 console.log(`${rows.length} named pubs found in ${area.city}`);
 
 for (let i = 0; i < rows.length; i += 500) {
-  const sql = `insert into public.pubs (name, address, neighbourhood, city, country, location, osm_id, opening_hours) values
+  const sql = `insert into public.pubs (name, address, neighbourhood, city, country, location, osm_id, opening_hours, website, brand, brand_wikidata, image_url, osm_features, opened_on) values
 ${rows.slice(i, i + 500).join(',\n')}
 on conflict (osm_id) do update set name = excluded.name, address = excluded.address,
   neighbourhood = coalesce(excluded.neighbourhood, pubs.neighbourhood), location = excluded.location,
-  opening_hours = coalesce(pubs.opening_hours, excluded.opening_hours);`;
+  opening_hours = coalesce(pubs.opening_hours, excluded.opening_hours),
+  website = coalesce(excluded.website, pubs.website), brand = coalesce(excluded.brand, pubs.brand),
+  brand_wikidata = coalesce(excluded.brand_wikidata, pubs.brand_wikidata), image_url = coalesce(pubs.image_url, excluded.image_url),
+  osm_features = excluded.osm_features, opened_on = coalesce(excluded.opened_on, pubs.opened_on);`;
   const r = await fetch(`https://api.supabase.com/v1/projects/${ref}/database/query`, {
     method: 'POST',
     headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },

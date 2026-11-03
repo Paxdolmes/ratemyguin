@@ -1,0 +1,98 @@
+name: Deploy web app
+
+# Publishes the website in web/ (a static Next.js site on the live database) to ratemyguin.com
+# on Cloudflare Pages, using the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets.
+
+on:
+  push:
+    branches: [main, expo-test-build] # expo-test-build is temporary, for trying it before merging
+    paths: ['web/**', '.github/workflows/deploy-web.yml']
+  workflow_dispatch:
+
+concurrency: deploy-web
+
+permissions:
+  contents: write # to save the screenshots to the site-screenshots branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - name: Build the website
+        run: npx next build
+      - name: Publish on ratemyguin.com
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        run: |
+          npx --yes wrangler@3 pages project create ratemyguin --production-branch main 2>&1 | tail -2 || true
+          npx --yes wrangler@3 pages deploy out --project-name ratemyguin --branch main --commit-dirty=true 2>&1 | tail -4
+          api=https://api.cloudflare.com/client/v4
+          auth=(-H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" -H "Content-Type: application/json")
+          for d in ratemyguin.com www.ratemyguin.com; do
+            curl -sS -X POST "${auth[@]}" "$api/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/ratemyguin/domains" -d "{\"name\":\"$d\"}" | jq -c '{success, errors: [.errors[]?.message], status: .result.status}'
+          done
+          zone=$(curl -sS "${auth[@]}" "$api/zones?name=ratemyguin.com" | jq -r '.result[0].id // empty')
+          if [ -z "$zone" ]; then echo "::warning::Couldn't see the ratemyguin.com zone; add CNAME records to ratemyguin.pages.dev by hand."; exit 0; fi
+          for n in ratemyguin.com www; do
+            existing=$(curl -sS "${auth[@]}" "$api/zones/$zone/dns_records?type=CNAME&name=$( [ $n = www ] && echo www.ratemyguin.com || echo ratemyguin.com )" | jq -r '.result[0].id // empty')
+            if [ -z "$existing" ]; then
+              curl -sS -X POST "${auth[@]}" "$api/zones/$zone/dns_records" -d "{\"type\":\"CNAME\",\"name\":\"$n\",\"content\":\"ratemyguin.pages.dev\",\"proxied\":true}" | jq -c '{success, errors: [.errors[]?.message]}'
+            fi
+          done
+          for d in ratemyguin.com www.ratemyguin.com; do
+            curl -sS "${auth[@]}" "$api/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/ratemyguin/domains/$d" | jq -c '{domain: .result.name, status: .result.status, validation: .result.validation_data.status}'
+          done
+      - name: Screenshot the live site
+        working-directory: .
+        env:
+          SITE: https://ratemyguin.pages.dev
+        run: |
+          npm i --no-save --prefix /tmp/shots playwright@1 >/dev/null 2>&1
+          npx --prefix /tmp/shots playwright install --with-deps chromium >/dev/null 2>&1
+          sleep 20
+          cat > /tmp/shots/shot.cjs <<'JS'
+          const { chromium } = require('/tmp/shots/node_modules/playwright');
+          (async () => {
+            const b = await chromium.launch();
+            const sizes = { phone: { width: 390, height: 844 }, desktop: { width: 1440, height: 900 } };
+            for (const [name, viewport] of Object.entries(sizes)) {
+              const ctx = await b.newContext({ viewport, deviceScaleFactor: 1, geolocation: { latitude: 51.4787, longitude: -0.1957 }, permissions: ['geolocation'] });
+              const p = await ctx.newPage();
+              p.on('console', (m) => m.type() === 'error' && console.log(name, 'console:', m.text()));
+              let pubLink = null;
+              for (const path of ['/', '/map/', '/scoring/', '/rate/', '/passport/', '/sign-in/', '/offers/', '/new/', '/owners/', '/privacy/', '/support/', 'PUB']) {
+                const url = path === 'PUB' ? pubLink : process.env.SITE + path;
+                if (!url) continue;
+                await p.goto(url, { waitUntil: 'networkidle' }).catch((e) => console.log(e.message));
+                await p.waitForTimeout(5000);
+                if (path === '/') pubLink = await p.$eval('a[href^="/pub/?id="]', (a) => a.href).catch(() => null);
+                const file = path === 'PUB' ? 'pub' : path.replace(/\//g, '_') || 'home';
+                await p.screenshot({ path: `shots/${name}_${file}.png`, fullPage: name === 'phone' ? false : false });
+                await p.screenshot({ path: `shots/${name}_${file}_full.png`, fullPage: true });
+              }
+              await ctx.close();
+            }
+            await b.close();
+          })();
+          JS
+          mkdir -p shots && node /tmp/shots/shot.cjs
+      - name: Save the screenshots to the site-screenshots branch
+        working-directory: .
+        run: |
+          cd shots
+          git init -q -b site-screenshots
+          git config user.name "github-actions" && git config user.email "actions@github.com"
+          git add -A && git commit -qm "Screenshots of ${{ github.sha }}"
+          git push -qf "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" site-screenshots

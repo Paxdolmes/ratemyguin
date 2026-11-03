@@ -38,7 +38,7 @@ export const PUBS: Pub[] = [
   { id: 'p2', name: 'The Black & Cream', address: '3 Lillie Rd', neighbourhood: 'Fulham', city: 'London', country: 'United Kingdom', lat: 51.4842, lng: -0.2010, atmosphere: 'Cosy', hours: '12:00–23:30' },
   { id: 'p3', name: 'The Two-Part Pour', address: '88 Kings Rd', neighbourhood: 'Chelsea', city: 'London', country: 'United Kingdom', lat: 51.4876, lng: -0.1702, atmosphere: 'Lively', hours: '11:00–00:00' },
   { id: 'p4', name: 'The Porter House', address: '21 New Kings Rd', neighbourhood: 'Parsons Green', city: 'London', country: 'United Kingdom', lat: 51.4741, lng: -0.1990, atmosphere: 'Sports', hours: '12:00–23:00' },
-  { id: 'p5', name: 'The Quiet Harp', address: '5 Elm Row', neighbourhood: 'Kilburn', city: 'London', country: 'United Kingdom', lat: 51.5475, lng: -0.1937, atmosphere: 'Traditional', hours: '12:00–23:00' },
+  { id: 'p5', name: 'The Quiet Corner', address: '5 Elm Row', neighbourhood: 'Kilburn', city: 'London', country: 'United Kingdom', lat: 51.5475, lng: -0.1937, atmosphere: 'Traditional', hours: '12:00–23:00' },
   { id: 'p6', name: 'The Creamy Head', address: '40 Camden High St', neighbourhood: 'Camden', city: 'London', country: 'United Kingdom', lat: 51.5390, lng: -0.1426, atmosphere: 'Lively', hours: '12:00–01:00' },
   { id: 'p7', name: 'The Long Settle', address: '2 Wapping Lane', neighbourhood: 'Wapping', city: 'London', country: 'United Kingdom', lat: 51.5046, lng: -0.0583, atmosphere: 'Cosy', hours: '12:00–23:00' },
   { id: 'p8', name: 'The Stout Heart', address: '77 Stoke Newington Ch St', neighbourhood: 'Stoke Newington', city: 'London', country: 'United Kingdom', lat: 51.5626, lng: -0.0794, atmosphere: 'Cosy', hours: '16:00–23:30' },

@@ -27,7 +27,7 @@ export default function PubDashboard() {
         <H1>{signedIn ? 'Claim your pub' : 'Sign in to see your pub'}</H1>
         <Body muted>
           {signedIn
-            ? 'Your account isn\'t linked to a pub yet. Ask the RateMyGuin team to link it. Claiming your pub from the app is coming next.'
+            ? 'Your account isn\'t linked to a pub yet. Ask the ratemyGuin team to link it. Claiming your pub from the app is coming next.'
             : 'See your Excellence Index, what drinkers say about your pour, and reply to reviews.'}
         </Body>
         {signedIn ? null : <Button label="Sign in" onPress={() => router.push('/sign-in')} />}
@@ -128,7 +128,7 @@ function Dashboard({ pubId }: { pubId: string }) {
 
       {s.award ? (
         <Card style={{ gap: 8, alignItems: 'flex-start' }}>
-          <H2>RateMyGuin Awards {new Date().getFullYear() + 1}</H2>
+          <H2>ratemyGuin Awards {new Date().getFullYear() + 1}</H2>
           <Body>
             You&apos;re on track for {AWARDS[s.award].name} ({AWARDS[s.award].range}).
           </Body>
@@ -162,7 +162,7 @@ function Reply({ rating, onReply }: { rating: { id: string; overall: number; not
       <H2>Latest review</H2>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
         <Initials name={who.name} size={34} />
-        <Body style={{ flex: 1, fontFamily: 'Figtree_700Bold' }}>{who.name}</Body>
+        <Body style={{ flex: 1, fontFamily: 'Jost_600SemiBold' }}>{who.name}</Body>
         <H2>{rating.overall.toFixed(1)}</H2>
       </View>
       <Body>{rating.note}</Body>
