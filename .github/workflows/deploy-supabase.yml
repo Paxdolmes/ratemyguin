@@ -15,6 +15,10 @@ on:
       test_email:
         description: Optional. Send a sign-in code to this address after deploying, to check email works.
         required: false
+      reconnect_stripe:
+        description: Re-create the Stripe webhook (only needed if payments stop updating plans).
+        type: boolean
+        default: false
 
 concurrency: deploy-supabase
 
@@ -27,6 +31,8 @@ jobs:
       PROJECT_REF: yhttayboxljswczexspg
       RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
       EMAIL_FROM: ${{ vars.EMAIL_FROM || 'codes@mail.ratemyguin.com' }}
+      # Optional: STRIPE_SECRET_KEY (sk_test_… or sk_live_…) switches on pub plan payments.
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
     steps:
       - uses: actions/checkout@v4
       - name: Check the secrets are set
@@ -40,6 +46,29 @@ jobs:
           version: 2.120.0
       - run: supabase link --project-ref "$PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
       - run: supabase db push --password "$SUPABASE_DB_PASSWORD"
+      - name: Deploy the payment functions
+        run: supabase functions deploy pub-plan stripe-webhook --project-ref "$PROJECT_REF" --no-verify-jwt --use-api
+      - name: Connect Stripe
+        if: env.STRIPE_SECRET_KEY != ''
+        env:
+          RECONNECT: ${{ inputs.reconnect_stripe }}
+        run: |
+          url="https://$PROJECT_REF.supabase.co/functions/v1/stripe-webhook"
+          if supabase secrets list --project-ref "$PROJECT_REF" | grep -q STRIPE_WEBHOOK_SECRET && [ "$RECONNECT" != "true" ]; then
+            supabase secrets set --project-ref "$PROJECT_REF" STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY"
+            echo "Stripe already connected"; exit 0
+          fi
+          for id in $(curl -sS -u "$STRIPE_SECRET_KEY:" "https://api.stripe.com/v1/webhook_endpoints?limit=100" | jq -r --arg u "$url" '.data[] | select(.url == $u) | .id'); do
+            curl -sS -u "$STRIPE_SECRET_KEY:" -X DELETE "https://api.stripe.com/v1/webhook_endpoints/$id" > /dev/null
+          done
+          secret=$(curl -sS -u "$STRIPE_SECRET_KEY:" https://api.stripe.com/v1/webhook_endpoints -d url="$url" \
+            -d 'enabled_events[]=checkout.session.completed' -d 'enabled_events[]=customer.subscription.created' \
+            -d 'enabled_events[]=customer.subscription.updated' -d 'enabled_events[]=customer.subscription.deleted' \
+            -d 'description=ratemyGuin pub plans' | jq -r '.secret // empty')
+          if [ -z "$secret" ]; then echo "::error::Stripe did not create the webhook. Check STRIPE_SECRET_KEY."; exit 1; fi
+          echo "::add-mask::$secret"
+          supabase secrets set --project-ref "$PROJECT_REF" STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY" STRIPE_WEBHOOK_SECRET="$secret"
+          echo "Stripe connected"
       - name: Send sign-in emails through Resend
         if: env.RESEND_API_KEY != ''
         run: |

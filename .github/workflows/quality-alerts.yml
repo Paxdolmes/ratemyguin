@@ -1,0 +1,40 @@
+name: Quality alerts
+
+# Every morning, emails pubs on ratemyGuin for Pubs whose pint scores have dipped
+# (last 14 days against the 90 before). Needs SUPABASE_ACCESS_TOKEN and RESEND_API_KEY.
+# Without RESEND_API_KEY it does nothing; owners still see alerts in the owner area.
+
+on:
+  schedule:
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+jobs:
+  alerts:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      PROJECT_REF: yhttayboxljswczexspg
+      EMAIL_FROM: ${{ vars.ALERTS_FROM || 'alerts@mail.ratemyguin.com' }}
+    steps:
+      - name: Send alerts
+        run: |
+          if [ -z "$RESEND_API_KEY" ]; then echo "No RESEND_API_KEY secret, so no emails today."; exit 0; fi
+          curl -sS -X POST "https://api.supabase.com/v1/projects/$PROJECT_REF/database/query" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" -H "Content-Type: application/json" \
+            -d '{"query": "select pub_id, pub_name, emails, part, recent, before, pints from private.alerts_to_send()"}' > alerts.json
+          jq -e 'type == "array"' alerts.json > /dev/null || { echo "::error::$(cat alerts.json)"; exit 1; }
+          echo "$(jq length alerts.json) alerts"
+          jq -c 'group_by(.pub_id)[]' alerts.json | while read -r pub; do
+            name=$(jq -r '.[0].pub_name' <<<"$pub")
+            to=$(jq -c '.[0].emails' <<<"$pub")
+            [ "$to" = "[]" ] && continue
+            lines=$(jq -r '.[] | "<li><b>\(.part | sub("_"; " ") | ascii_downcase)</b>: \(.recent) out of 10 over the last two weeks (\(.pints) pints), down from \(.before).</li>"' <<<"$pub")
+            id=$(jq -r '.[0].pub_id' <<<"$pub")
+            html="<div style=\"font-family:Georgia,serif;color:#17110D\"><h2>Your pint scores have dipped at ${name}</h2><ul>${lines}</ul><p>Worth checking line cleaning, gas and cellar temperature today.</p><p><a href=\"https://ratemyguin.com/owners/?pub=${id}\">See the details in your owner area</a></p><p style=\"color:#776\">ratemyGuin for Pubs. Turn these emails off in the owner area.</p></div>"
+            jq -n --arg from "ratemyGuin <$EMAIL_FROM>" --argjson to "$to" --arg subject "Pint quality alert: $name" --arg html "$html" \
+              '{from: $from, to: $to, subject: $subject, html: $html}' > mail.json
+            curl -sS -o /dev/null -w "%{http_code}\n" -X POST https://api.resend.com/emails \
+              -H "Authorization: Bearer $RESEND_API_KEY" -H "Content-Type: application/json" -d @mail.json
+          done
