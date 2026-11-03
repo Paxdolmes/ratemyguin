@@ -87,7 +87,7 @@ export default function OffersPage() {
             Array.from({ length: 4 }, (_, i) => <div key={i} className="h-24 animate-pulse rounded-2xl bg-cream" />)
           ) : offers.length === 0 ? (
             <div className="flex flex-col gap-2 rounded-2xl border border-dashed border-stout/25 p-6">
-              <p className="font-display text-2xl font-semibold">No offers nearby today</p>
+              <p className="font-display text-2xl font-semibold">No offers nearby yet</p>
               <p className="text-sm text-muted-foreground">Try a wider radius, or check back later. Run a pub? <Link href="/owners/" className="font-semibold text-pub hover:underline">Post an offer</Link>.</p>
             </div>
           ) : (
@@ -96,6 +96,7 @@ export default function OffersPage() {
                 <Tag className="mt-1 size-5 shrink-0 text-pub" aria-hidden="true" />
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
                   <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-pub">
+                    {o.today && <span className="mr-2 rounded-full bg-pub px-2 py-0.5 text-paper">Today</span>}
                     {o.source === "web" ? "From the pub's website" : `${OFFER_KINDS[o.kind]} offer`} · {offerDays(o.days)}
                   </span>
                   <h2 className="font-display text-2xl font-semibold leading-tight">{o.title}</h2>

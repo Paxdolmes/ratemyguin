@@ -645,7 +645,7 @@ export async function removePubPhoto(photo: PubPhoto) {
 
 export const OFFER_KINDS = { food: "Food", pint: "Pint", event: "Event", other: "Offer" } as const
 export type OfferKind = keyof typeof OFFER_KINDS
-export type Offer = { id: string; pubId: string; pubName: string; area: string | null; kind: OfferKind; title: string; details: string | null; days: number[]; endsOn: string; metres?: number; lat?: number; lng?: number; source: "pub" | "web"; sourceUrl: string | null; foundOn: string | null }
+export type Offer = { id: string; pubId: string; pubName: string; area: string | null; kind: OfferKind; title: string; details: string | null; days: number[]; endsOn: string; metres?: number; lat?: number; lng?: number; source: "pub" | "web"; sourceUrl: string | null; foundOn: string | null; today?: boolean }
 
 /** UK rules on alcohol promotions; the database checks this too. */
 export const IRRESPONSIBLE_OFFER =
@@ -663,8 +663,9 @@ export async function pubOffers(pubId: string): Promise<Offer[]> {
 }
 export async function offersNear(lat: number, lng: number, metres = 3000): Promise<Offer[]> {
   const { data } = await supabase.rpc("offers_near", { p_lat: lat, p_lng: lng, p_metres: metres })
-  type Row = { id: string; pub_id: string; pub_name: string; neighbourhood: string | null; kind: OfferKind; title: string; details: string | null; days: number[]; ends_on: string; metres: number; lat: number; lng: number; source: "pub" | "web"; source_url: string | null; found_on: string | null }
+  type Row = { id: string; pub_id: string; pub_name: string; neighbourhood: string | null; kind: OfferKind; title: string; details: string | null; days: number[]; ends_on: string; metres: number; lat: number; lng: number; source: "pub" | "web"; source_url: string | null; found_on: string | null; today: boolean }
   return ((data ?? []) as Row[]).map((o) => ({
+    today: o.today,
     id: o.id, pubId: o.pub_id, pubName: o.pub_name, area: o.neighbourhood, kind: o.kind, title: o.title, details: o.details,
     days: o.days, endsOn: o.ends_on, metres: o.metres, lat: o.lat, lng: o.lng, source: o.source, sourceUrl: o.source_url, foundOn: o.found_on,
   }))
