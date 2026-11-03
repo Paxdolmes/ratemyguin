@@ -10,7 +10,6 @@ import type { PubWithScore } from '@/lib/store';
 
 type Props = { pubs: PubWithScore[]; here: { lat: number; lng: number }; height?: number | `${number}%`; onPick: (id: string) => void };
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 type Leaflet = any;
 
 const LEAFLET = 'https://unpkg.com/leaflet@1.9.4/dist';
@@ -132,4 +131,13 @@ export function PubMap({ pubs, here, height = 320, onPick }: Props) {
   }, [here.lat, here.lng]);
 
   return <View ref={box} style={{ height, width: '100%', backgroundColor: c.surfaceMuted, zIndex: 0 }} />;
+}
+
+/** One pub on a small map (web). */
+export function PubMiniMap({ pub }: { pub: PubWithScore }) {
+  return (
+    <View style={{ borderRadius: 18, overflow: 'hidden' }}>
+      <PubMap pubs={[pub]} here={pub} height={150} onPick={() => {}} />
+    </View>
+  );
 }

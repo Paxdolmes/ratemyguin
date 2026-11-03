@@ -32,7 +32,9 @@ export type PubExtras = {
   linesCleanedOn?: string | null;
 };
 
-export type PubWithScore = Pub & PubExtras & { score: IndexBreakdown; distanceM: number | null };
+/** A pub as the app shows it. Atmosphere and hours are null when nobody has told us yet. */
+export type PubWithScore = Omit<Pub, 'atmosphere' | 'hours'> &
+  PubExtras & { atmosphere: Pub['atmosphere'] | null; hours: string | null; score: IndexBreakdown; distanceM: number | null };
 
 type NewRating = Omit<Rating, 'id' | 'userId' | 'ratedAt' | 'verification' | 'weight'> & { fix: Fix | null; features?: string[] };
 
@@ -56,7 +58,12 @@ type Store = {
   replyTo: (ratingId: string, text: string) => Promise<void>;
   here: { lat: number; lng: number };
   refresh: () => Promise<void>;
+  /** Pubs whose name matches, nearest first. Searches every pub, not just the ones loaded. */
+  searchPubs: (q: string) => Promise<PubWithScore[]>;
 };
+
+const byDistance = (a: PubWithScore, b: PubWithScore) => (a.distanceM ?? Infinity) - (b.distanceM ?? Infinity);
+const matches = (name: string, q: string) => name.toLowerCase().includes(q.trim().toLowerCase());
 
 const Ctx = createContext<Store | null>(null);
 
@@ -152,6 +159,7 @@ function DemoStore({ children }: { children: ReactNode }) {
       replyTo,
       here: FULHAM,
       refresh: async () => {},
+      searchPubs: async (q) => pubs.filter((p) => matches(p.name, q)).sort(byDistance),
     }),
     [ratings, pubs, addRating, replyTo],
   );
@@ -221,14 +229,14 @@ function toPub(r: DirectoryRow, here: { lat: number; lng: number }): PubWithScor
   return {
     id: r.id,
     name: r.name,
-    address: r.address,
+    address: r.address?.trim() ?? '',
     neighbourhood: r.neighbourhood ?? r.city,
     city: r.city,
     country: r.country,
     lat: r.lat,
     lng: r.lng,
-    atmosphere: r.atmosphere ?? 'Traditional',
-    hours: r.opening_hours ?? 'Hours not listed',
+    atmosphere: r.atmosphere ?? null,
+    hours: r.opening_hours?.trim() || null,
     distanceM: Math.round(distanceMetres(here, r)),
     pintScore: r.pint_score ?? null,
     pubScore: r.pub_score ?? null,
@@ -286,9 +294,14 @@ const RATING_COLUMNS =
 
 /** Pubs near here, the latest ratings, and the pubs those ratings mention. */
 async function fetchHome(here: { lat: number; lng: number }) {
-  const near = await supabase.rpc('pub_directory_near', { p_lat: here.lat, p_lng: here.lng, p_radius_m: 3000 });
-  const recent = await supabase.from('public_ratings').select(RATING_COLUMNS).order('rated_at', { ascending: false }).limit(200);
-  const pubs = (near.data ?? []) as DirectoryRow[];
+  const [near, recent, top] = await Promise.all([
+    supabase.rpc('pub_directory_near', { p_lat: here.lat, p_lng: here.lng, p_radius_m: 3000 }),
+    supabase.from('public_ratings').select(RATING_COLUMNS).order('rated_at', { ascending: false }).limit(200),
+    // The best-rated pubs anywhere, so Rankings and "London" aren't limited to what's nearby.
+    supabase.from('pub_directory').select('*').not('excellence_index', 'is', null).order('excellence_index', { ascending: false }).limit(60),
+  ]);
+  const pubs = [...((near.data ?? []) as DirectoryRow[])];
+  for (const row of (top.data ?? []) as DirectoryRow[]) if (!pubs.some((p) => p.id === row.id)) pubs.push(row);
   const ratings = (recent.data ?? []) as RatingRow[];
   const missing = [...new Set(ratings.map((r) => r.pub_id))].filter((id) => !pubs.some((p) => p.id === id)).slice(0, 150);
   if (missing.length) {
@@ -363,7 +376,15 @@ function LiveStore({ children }: { children: ReactNode }) {
     if (status !== 'ready' || !profile) return;
     (async () => {
       const mine = await supabase.from('public_ratings').select(RATING_COLUMNS).eq('user_id', profile.id).order('rated_at', { ascending: false });
-      if (mine.data) mergeRatings(mine.data as RatingRow[]);
+      if (mine.data) {
+        mergeRatings(mine.data as RatingRow[]);
+        // The pubs behind every stamp in the Passport, even far-away ones.
+        const ids = [...new Set((mine.data as RatingRow[]).map((r) => r.pub_id))].slice(0, 300);
+        if (ids.length) {
+          const visited = await supabase.from('pub_directory').select('*').in('id', ids);
+          if (visited.data) mergePubs(visited.data as DirectoryRow[]);
+        }
+      }
       const f = await supabase.from('follows').select('followee').eq('follower', profile.id);
       if (f.data) setFollowing(new Set(f.data.map((x) => x.followee as string)));
       const staff = await supabase.rpc('my_pubs');
@@ -449,6 +470,18 @@ function LiveStore({ children }: { children: ReactNode }) {
     [profile, myPubId],
   );
 
+  const searchPubs = useCallback(
+    async (q: string) => {
+      const term = q.trim().replace(/[%_\\]/g, (m) => `\\${m}`);
+      if (term.length < 2) return [];
+      const { data } = await supabase.from('pub_directory').select('*').ilike('name', `%${term}%`).limit(40);
+      const rows = (data ?? []) as DirectoryRow[];
+      mergePubs(rows);
+      return rows.map((r) => toPub(r, here)).sort(byDistance).slice(0, 25);
+    },
+    [here],
+  );
+
   const value = useMemo<Store>(() => {
     const pubs = [...pubRows.values()].map((r) => toPub(r, here));
     const list = [...ratings.values()].sort((a, b) => Date.parse(b.ratedAt) - Date.parse(a.ratedAt));
@@ -474,8 +507,9 @@ function LiveStore({ children }: { children: ReactNode }) {
       replyTo,
       here,
       refresh,
+      searchPubs,
     };
-  }, [pubRows, ratings, here, profile, loading, error, loadPub, following, myPubId, addRating, replyTo, refresh]);
+  }, [pubRows, ratings, here, profile, loading, error, loadPub, following, myPubId, addRating, replyTo, refresh, searchPubs]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

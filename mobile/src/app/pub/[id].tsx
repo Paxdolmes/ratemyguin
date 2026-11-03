@@ -1,10 +1,12 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { BadgeCheck, Clock, Footprints, MapPin, TrainFront } from 'lucide-react-native';
+import { BadgeCheck, Beer, Clock, Footprints, MapPin, TrainFront } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
 import { Alert, Image, Linking, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { PubMiniMap } from '@/components/map';
 import { PubExtras } from '@/components/pub-extras';
-import { AwardChip, Body, Button, Card, H1, H2, IndexScore, Initials, ScoreBar, Small } from '@/components/ui';
+import { AwardChip, Body, Button, Card, EmptyState, H1, H2, IndexScore, Initials, ScoreBar, ScreenMessage, Small } from '@/components/ui';
 import { Fonts, usePalette } from '@/constants/theme';
 import { FEATURES, TAGS, type FeatureKey, type TagKey } from '@/domain/tags';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
@@ -37,9 +39,11 @@ function reportOrBlock(ratingId: string) {
 export default function PubProfile() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const c = usePalette();
+  const insets = useSafeAreaInsets();
   const { pub, ratingsFor, loadPub } = useStore();
+  const [looked, setLooked] = useState(false);
   useEffect(() => {
-    void loadPub(id);
+    void loadPub(id).finally(() => setLooked(true));
   }, [id, loadPub]);
   const p = pub(id);
   const [stations, setStations] = useState<{ name: string; walk_minutes: number }[]>([]);
@@ -49,13 +53,14 @@ export default function PubProfile() {
       .rpc('nearest_stations', { p_lat: p.lat, p_lng: p.lng })
       .then(({ data }) => setStations((data ?? []) as { name: string; walk_minutes: number }[]), () => {});
   }, [p?.id]); // eslint-disable-line react-hooks/exhaustive-deps
-  if (!p) return <Body style={{ padding: 20 }}>Loading…</Body>;
+  if (!p) return <ScreenMessage loading={!looked} message={looked ? "We couldn't find this pub." : undefined} />;
   const s = p.score;
   const ratings = ratingsFor(p.id).slice(0, 12);
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 48 }}>
-      <Stack.Screen options={{ title: p.name }} />
+    <View style={{ flex: 1, backgroundColor: c.bg }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ flex: 1 }} contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 120 + insets.bottom }}>
+      <Stack.Screen options={{ title: '' }} />
       <View style={{ gap: 6 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           {p.logoUrl || p.imageUrl ? (
@@ -65,40 +70,42 @@ export default function PubProfile() {
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
           <MapPin size={14} color={c.inkMuted} />
-          <Small>
-            {p.address}, {p.neighbourhood} · {formatDistance(p.distanceM)}
-          </Small>
+          <Small style={{ flex: 1 }}>{[[p.address, p.neighbourhood].filter(Boolean).join(', '), formatDistance(p.distanceM)].filter(Boolean).join(' · ')}</Small>
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          <Clock size={14} color={c.inkMuted} />
-          <Small>
-            {p.hours} · {p.atmosphere} · Pint {formatPrice(s.medianPricePence)}
-          </Small>
-        </View>
+        {p.hours || p.atmosphere || s.medianPricePence != null ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Clock size={14} color={c.inkMuted} />
+            <Small style={{ flex: 1 }}>{[p.hours, p.atmosphere, s.medianPricePence != null ? `Pint ${formatPrice(s.medianPricePence)}` : null].filter(Boolean).join(' · ')}</Small>
+          </View>
+        ) : null}
       </View>
 
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14, alignItems: 'center' }}>
-        <Pressable
-          onPress={() =>
-            Linking.openURL(
-              Platform.OS === 'ios'
-                ? `http://maps.apple.com/?daddr=${p.lat},${p.lng}&dirflg=w`
-                : `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}&travelmode=walking`,
-            )
-          }
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}
-        >
-          <Footprints size={16} color={c.brand} />
-          <Text style={{ fontFamily: Fonts.bodySemi, color: c.brand }}>Walking directions</Text>
-        </Pressable>
-        {stations.map((st) => (
-          <View key={st.name} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <TrainFront size={14} color={c.inkMuted} />
-            <Small>
-              {st.name} · {st.walk_minutes} min
-            </Small>
-          </View>
-        ))}
+      <View style={{ gap: 8 }}>
+        <PubMiniMap pub={p} />
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: 14, rowGap: 6, alignItems: 'center' }}>
+          <Pressable
+            accessibilityRole="link"
+            hitSlop={6}
+            onPress={() =>
+              Linking.openURL(
+                Platform.OS === 'ios'
+                  ? `http://maps.apple.com/?daddr=${p.lat},${p.lng}&dirflg=w`
+                  : `https://www.google.com/maps/dir/?api=1&destination=${p.lat},${p.lng}&travelmode=walking`,
+              )
+            }
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Footprints size={16} color={c.brand} />
+            <Text style={{ fontFamily: Fonts.bodySemi, color: c.brand }}>Walking directions</Text>
+          </Pressable>
+          {stations.map((st) => (
+            <View key={st.name} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <TrainFront size={14} color={c.inkMuted} />
+              <Small>
+                {st.name} · {st.walk_minutes} min walk
+              </Small>
+            </View>
+          ))}
+        </View>
       </View>
       {p.features && p.features.length > 0 ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
@@ -157,9 +164,10 @@ export default function PubProfile() {
         </Card>
       ) : null}
 
-      <Button label="Rate a pint here" onPress={() => router.push(`/rate/${p.id}`)} />
-
       <H2>Latest pints</H2>
+      {ratings.length === 0 ? (
+        <EmptyState icon={<Beer size={22} color={c.inkSubtle} />} title="No pints rated here yet" body={`Be the first. ${MIN_RATINGS_FOR_INDEX} ratings give ${p.name} its Excellence Index.`} />
+      ) : null}
       {ratings.map((r) => {
         const name = r.anonymous ? 'Anonymous' : (r.authorName ?? 'A drinker');
         return (
@@ -169,7 +177,7 @@ export default function PubProfile() {
               <View style={{ flex: 1 }}>
                 <Body style={{ fontFamily: 'Jost_600SemiBold' }}>{name}</Body>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                  {r.verification !== 'none' ? <BadgeCheck size={13} color={c.success} /> : null}
+                  {r.verification !== 'none' ? <BadgeCheck size={13} color={c.brand} /> : null}
                   <Small>
                     {r.verification !== 'none' ? 'Verified visit · ' : ''}
                     {new Date(r.ratedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
@@ -210,5 +218,9 @@ export default function PubProfile() {
         );
       })}
     </ScrollView>
+      <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: 20, paddingTop: 12, paddingBottom: Math.max(insets.bottom, 12) + 4, backgroundColor: c.bg, borderTopWidth: 1, borderColor: c.border }}>
+        <Button label="Rate a pint here" onPress={() => router.push(`/rate/${p.id}`)} />
+      </View>
+    </View>
   );
 }

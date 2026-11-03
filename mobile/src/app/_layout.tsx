@@ -62,7 +62,7 @@ export default function RootLayout() {
             <Stack.Screen name="new" options={{ title: 'New openings' }} />
             <Stack.Screen name="rate/[pubId]" options={{ presentation: 'modal', title: 'Rate your pint' }} />
             <Stack.Screen name="sign-in" options={{ presentation: 'modal', title: '' }} />
-            <Stack.Screen name="card/[ratingId]" options={{ presentation: 'modal', title: 'Share your pint' }} />
+            <Stack.Screen name="card/[ratingId]" options={{ presentation: 'modal', title: 'Share your pint', headerStyle: { backgroundColor: '#0E0A07' }, headerTintColor: '#F6EEDC', headerTitleStyle: { fontFamily: 'Jost_600SemiBold', color: '#F6EEDC' } }} />
           </Stack>
           <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
         </ThemeProvider>

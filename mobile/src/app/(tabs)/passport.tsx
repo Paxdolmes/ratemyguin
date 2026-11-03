@@ -2,8 +2,11 @@ import { router } from 'expo-router';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Body, Card, H1, H2, Small } from '@/components/ui';
-import { usePalette } from '@/constants/theme';
+import { Stamp as StampIcon } from 'lucide-react-native';
+
+import { Body, Button, Card, EmptyState, H1, H2, Small } from '@/components/ui';
+import { Fonts, usePalette } from '@/constants/theme';
+import { useAuth } from '@/lib/auth';
 import { badges, uniqueStamps, type Stamp } from '@/domain/passport';
 import { useStore } from '@/lib/store';
 
@@ -18,6 +21,7 @@ export default function Passport() {
   const c = usePalette();
   const insets = useSafeAreaInsets();
   const { myRatings, pub, me, live } = useStore();
+  const { status } = useAuth();
   const stamps = uniqueStamps([
     ...(live ? [] : DEMO_SEED),
     ...myRatings.flatMap((r) => {
@@ -25,11 +29,23 @@ export default function Passport() {
       return p ? [{ pubId: r.pubId, city: p.city, country: p.country, at: r.ratedAt, pubIndex: p.score.index, verified: r.verification !== 'none' }] : [];
     }),
   ]);
-  const all = badges(stamps);
+  // Earned badges first, newest first; then the ones still to get.
+  const when = (b: { earnedAt: string | null }) => (b.earnedAt ? Date.parse(b.earnedAt) || 1 : 0);
+  const all = badges(stamps).sort((a, b) => when(b) - when(a));
   const next = all.find((b) => b.id.startsWith('pubs-') && !b.earnedAt);
 
+  if (live && status !== 'ready') {
+    return (
+      <View style={{ flex: 1, backgroundColor: c.bg, paddingTop: insets.top + 12, padding: 20, gap: 14 }}>
+        <H1>Your Guin Passport</H1>
+        <Body muted>Every pub you rate earns a stamp. Collect pubs, cities and countries, and unlock badges for exploring.</Body>
+        {status === 'loading' ? null : <Button label="Sign in to start collecting" onPress={() => router.push('/sign-in')} />}
+      </View>
+    );
+  }
+
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ paddingTop: insets.top + 12, padding: 20, gap: 16 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ paddingTop: insets.top + 12, padding: 20, gap: 16, paddingBottom: 40 }}>
       <Small>@{me?.handle ?? 'you'}</Small>
       <H1>Your Guin Passport</H1>
       <Card style={{ flexDirection: 'row', justifyContent: 'space-around' }}>
@@ -39,7 +55,7 @@ export default function Passport() {
       </Card>
       {next ? (
         <Card style={{ gap: 8 }}>
-          <Body style={{ fontFamily: 'Jost_600SemiBold' }}>Next: {next.title}</Body>
+          <Body style={{ fontFamily: Fonts.bodySemi }}>Next badge: {next.title}</Body>
           <View style={{ height: 10, borderRadius: 5, backgroundColor: c.surfaceMuted, overflow: 'hidden' }}>
             <View style={{ width: `${(next.progress / next.target) * 100}%`, height: 10, backgroundColor: c.brand }} />
           </View>
@@ -49,12 +65,22 @@ export default function Passport() {
         </Card>
       ) : null}
       <H2>Stamps</H2>
+      {stamps.length === 0 ? (
+        <EmptyState
+          icon={<StampIcon size={22} color={c.inkSubtle} />}
+          title="No stamps yet"
+          body="Rate a pint at any pub to collect your first stamp. Rate from inside the pub and it's a verified stamp."
+          action={{ label: 'Rate a pint', onPress: () => router.push('/rate') }}
+        />
+      ) : null}
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
         {stamps.map((s) => {
           const p = pub(s.pubId);
           return (
             <Pressable key={s.pubId} disabled={!p} onPress={() => p && router.push(`/pub/${p.id}`)} style={{ width: '31%', aspectRatio: 1, borderRadius: 999, borderWidth: 2, borderColor: s.verified ? c.brand : c.border, borderStyle: s.verified ? 'solid' : 'dashed', alignItems: 'center', justifyContent: 'center', padding: 8 }}>
-              <Small style={{ textAlign: 'center', color: c.ink, fontFamily: 'Jost_600SemiBold' }}>{p?.name.replace(/^The /, '') ?? 'Dublin pub'}</Small>
+              <Small numberOfLines={2} style={{ textAlign: 'center', color: c.ink, fontFamily: Fonts.bodySemi }}>
+                {p?.name.replace(/^The /, '') ?? `A pub in ${s.city}`}
+              </Small>
               <Small style={{ fontSize: 11 }}>{new Date(s.at).toLocaleDateString('en-GB', { month: 'short', year: '2-digit' })}</Small>
             </Pressable>
           );
@@ -62,12 +88,12 @@ export default function Passport() {
       </View>
       <H2>Badges</H2>
       {all.map((b) => (
-        <Card key={b.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', opacity: b.earnedAt ? 1 : 0.55 }}>
-          <View>
-            <Body style={{ fontFamily: 'Jost_600SemiBold' }}>{b.title}</Body>
+        <Card key={b.id} style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 12, opacity: b.earnedAt ? 1 : 0.6 }}>
+          <View style={{ flex: 1 }}>
+            <Body style={{ fontFamily: Fonts.bodySemi }}>{b.title}</Body>
             <Small>{b.detail}</Small>
           </View>
-          <Small style={{ color: b.earnedAt ? c.success : c.inkMuted }}>{b.earnedAt ? 'Earned' : `${b.progress}/${b.target}`}</Small>
+          <Small style={{ color: b.earnedAt ? c.brand : c.inkMuted, fontFamily: Fonts.bodySemi }}>{b.earnedAt ? 'Earned' : `${b.progress}/${b.target}`}</Small>
         </Card>
       ))}
     </ScrollView>

@@ -161,7 +161,7 @@ export default function SignIn() {
   }
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 24, gap: 14 }} keyboardShouldPersistTaps="handled">
+    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 24, gap: 14 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets>
       <Lockup pubs={appVariant === 'pubs'} />
       <View style={{ gap: 6, marginTop: 12 }}>
         <H1>{title}</H1>
@@ -169,7 +169,7 @@ export default function SignIn() {
       </View>
       {content}
       {error ? <Body style={{ color: c.danger }}>{error}</Body> : null}
-      <Small>You must be 18 or over to use RateMyGuin.</Small>
+      <Small>You must be 18 or over to use ratemyGuin.</Small>
     </ScrollView>
   );
 }

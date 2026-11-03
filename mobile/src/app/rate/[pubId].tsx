@@ -3,9 +3,11 @@ import * as Location from 'expo-location';
 import { router, useLocalSearchParams } from 'expo-router';
 import { BadgeCheck, Camera, MapPin } from 'lucide-react-native';
 import { useEffect, useState } from 'react';
-import { Image, Pressable, ScrollView, Switch, Text, TextInput, View } from 'react-native';
+import { Image, Pressable, ScrollView, Switch, TextInput, View } from 'react-native';
 
-import { Body, Button, Card, Chip, H1, ScorePicker, Small, Segmented } from '@/components/ui';
+import * as Haptics from 'expo-haptics';
+
+import { Body, Button, Card, Chip, H1, ScorePicker, ScreenMessage, Segmented, Small } from '@/components/ui';
 import { Fonts, usePalette } from '@/constants/theme';
 import { SUB_SCORE_LABELS, SUB_SCORES, validateRating, type SubScore } from '@/domain/scores';
 import { FEATURES, TAGS, type FeatureKey, type TagKey } from '@/domain/tags';
@@ -59,7 +61,7 @@ export default function RatePint() {
     if (!p) void loadPub(pubId);
   }, [p, pubId, loadPub]);
 
-  if (!p) return <Body>Loading…</Body>;
+  if (!p) return <ScreenMessage loading />;
   const visit = verifyVisit(p, fix);
   const set = (k: keyof Scores) => (v: number) => setScores((s) => ({ ...s, [k]: v }));
 
@@ -73,7 +75,10 @@ export default function RatePint() {
 
   const post = async () => {
     if (!gate()) return;
-    const pricePence = price ? Math.round(parseFloat(price.replace(/[£,]/g, '')) * 100) : null;
+    // "6.20", "£6.20" or "6,20" all mean six pounds twenty.
+    const amount = parseFloat(price.replace(/[£\s]/g, '').replace(',', '.'));
+    if (price.trim() && !Number.isFinite(amount)) return setError('Enter the price like 6.20, or leave it blank.');
+    const pricePence = price.trim() ? Math.round(amount * 100) : null;
     const draft = { ...scores, atmosphere: rateAtmos ? scores.atmosphere : null, pricePence };
     const invalid = validateRating(draft);
     if (invalid) return setError(invalid);
@@ -81,46 +86,54 @@ export default function RatePint() {
     const res = await addRating({ pubId: p.id, ...draft, note: note.trim(), photoUri: photo, anonymous, fix, tags, features });
     setBusy(false);
     if (!res.ok) return setError(res.reason);
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     router.replace(`/card/${res.rating.id}`);
   };
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 48 }} keyboardShouldPersistTaps="handled">
+    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ flex: 1, backgroundColor: c.bg }} contentContainerStyle={{ padding: 20, gap: 16, paddingBottom: 48 }} keyboardShouldPersistTaps="handled" automaticallyAdjustKeyboardInsets keyboardDismissMode="interactive">
       <View style={{ gap: 8 }}>
         <H1>{p.name}</H1>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-          {visit.verified ? <BadgeCheck size={16} color={c.success} /> : <MapPin size={16} color={c.inkMuted} />}
-          <Small style={{ color: visit.verified ? c.success : c.inkMuted }}>{locating ? 'Checking you are at the pub…' : visit.reason}</Small>
+          {visit.verified ? <BadgeCheck size={16} color={c.brand} /> : <MapPin size={16} color={c.inkMuted} />}
+          <Small style={{ color: visit.verified ? c.brand : c.inkMuted, fontFamily: visit.verified ? Fonts.bodySemi : Fonts.bodyMedium }}>{locating ? 'Checking you are at the pub…' : visit.reason}</Small>
         </View>
         {!locating && !visit.verified ? <Small>Unverified ratings still post, but count for less in the Index.</Small> : null}
       </View>
 
-      <Card style={{ alignItems: 'center', gap: 6 }}>
-        <Small>Overall</Small>
-        <Text style={{ fontFamily: Fonts.display, fontSize: 72, lineHeight: 76, color: c.ink }}>{scores.overall.toFixed(1)}</Text>
-        <Small>out of 10</Small>
-        <View style={{ alignSelf: 'stretch', marginTop: 8 }}>
-          <ScorePicker label="Overall score" value={scores.overall} onChange={set('overall')} />
-        </View>
+      <Card style={{ alignItems: 'center', gap: 10, paddingVertical: 20 }}>
+        <Small style={{ fontFamily: Fonts.bodySemi, letterSpacing: 1 }}>OVERALL</Small>
+        <ScorePicker big label="Overall" value={scores.overall} onChange={set('overall')} />
       </Card>
 
       <Card style={{ gap: 18 }}>
+        <Body style={{ fontFamily: Fonts.bodySemi }}>The pint in detail</Body>
         {SUB_SCORES.map((k) => (
           <ScorePicker key={k} label={SUB_SCORE_LABELS[k]} value={scores[k]} onChange={set(k)} />
         ))}
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Body>Rate atmosphere and service too</Body>
-          <Switch value={rateAtmos} onValueChange={setRateAtmos} />
+          <Body style={{ flex: 1 }}>Rate atmosphere and service too</Body>
+          <Switch value={rateAtmos} onValueChange={setRateAtmos} trackColor={{ true: c.brand, false: c.border }} ios_backgroundColor={c.border} thumbColor="#FFFFFF" />
         </View>
         {rateAtmos ? <ScorePicker label="Atmosphere and service" value={scores.atmosphere} onChange={set('atmosphere')} /> : null}
       </Card>
 
       <Card style={{ gap: 12 }}>
-        <Body style={{ fontFamily: Fonts.bodySemi }}>Why that score?</Body>
+        <Body style={{ fontFamily: Fonts.bodySemi }}>What was good?</Body>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-          {(Object.keys(TAGS) as TagKey[]).map((t) => (
-            <Chip toggle key={t} label={TAGS[t].label} active={tags.includes(t)} onPress={() => setTags((xs) => flip(xs, t))} />
-          ))}
+          {(Object.keys(TAGS) as TagKey[])
+            .filter((t) => TAGS[t].good)
+            .map((t) => (
+              <Chip toggle key={t} label={TAGS[t].label} active={tags.includes(t)} onPress={() => setTags((xs) => flip(xs, t))} />
+            ))}
+        </View>
+        <Body style={{ fontFamily: Fonts.bodySemi, marginTop: 6 }}>Anything wrong?</Body>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+          {(Object.keys(TAGS) as TagKey[])
+            .filter((t) => !TAGS[t].good)
+            .map((t) => (
+              <Chip toggle key={t} label={TAGS[t].label} active={tags.includes(t)} onPress={() => setTags((xs) => flip(xs, t))} />
+            ))}
         </View>
         <Body style={{ fontFamily: Fonts.bodySemi, marginTop: 6 }}>Does the pub have…</Body>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -128,18 +141,18 @@ export default function RatePint() {
             <Chip toggle key={f} label={FEATURES[f]} active={features.includes(f)} onPress={() => setFeatures((xs) => flip(xs, f))} />
           ))}
         </View>
-        <Small>Optional. Features help others filter and never change the score.</Small>
+        <Small>All optional. Tags explain your score; features help others filter and never change it.</Small>
       </Card>
 
       <Card style={{ gap: 12 }}>
-        <Body style={{ fontFamily: 'Jost_600SemiBold' }}>Price paid</Body>
+        <Body style={{ fontFamily: Fonts.bodySemi }}>Price paid</Body>
         <TextInput
           value={price}
           onChangeText={setPrice}
-          placeholder="£6.20"
+          placeholder="£6.20 (optional)"
           placeholderTextColor={c.inkSubtle}
           keyboardType="decimal-pad"
-          style={{ fontFamily: Fonts.bodySemi, fontSize: 18, color: c.ink, backgroundColor: c.surfaceMuted, borderRadius: 12, padding: 12 }}
+          style={{ fontFamily: price ? Fonts.bodySemi : Fonts.body, fontSize: 17, color: c.ink, backgroundColor: c.surfaceMuted, borderRadius: 12, padding: 12 }}
         />
         <TextInput
           value={note}
@@ -154,6 +167,7 @@ export default function RatePint() {
           {photo ? <Image source={{ uri: photo }} style={{ width: 48, height: 60, borderRadius: 8 }} /> : <Camera size={22} color={c.inkMuted} />}
           <Body muted>{photo ? 'Change photo' : 'Add a photo of your pint'}</Body>
         </Pressable>
+        <Small style={{ fontFamily: Fonts.bodySemi, color: c.ink, marginTop: 4 }}>Post as</Small>
         <Segmented
           options={[
             { value: 'named', label: 'Show my name' },
