@@ -61,6 +61,23 @@ jobs:
         run: |
           npx --yes eas-cli@latest build:list --limit 3 --json --non-interactive \
             | jq -r '.[] | "BUILD \(.platform) \(.appBuildVersion // "?") \(.status) \(.error.message // "") https://expo.dev/accounts/ratemyguin/projects/ratemyguin/builds/\(.id)"'
+          # Uploads to Apple (Expo submissions)
+          pid=$(node -e "console.log(require('@expo/config').getConfig('.',{skipSDKVersionRequirement:true}).exp.extra.eas.projectId)")
+          q='query($id:String!){app{byId(appId:$id){submissions(offset:0,limit:3,filter:{platform:IOS}){id status createdAt error{errorCode message}}}}}'
+          curl -sS https://api.expo.dev/graphql -H "Authorization: Bearer $EXPO_TOKEN" -H 'content-type: application/json' \
+            -d "$(jq -n --arg q "$q" --arg id "$pid" '{query:$q,variables:{id:$id}}')" \
+            | jq -r '(.errors // [] | .[] | "SUBMIT-QUERY-ERROR \(.message)"), (.data.app.byId.submissions // [] | .[] | "SUBMIT \(.createdAt) \(.status) \(.error.errorCode // "") \(.error.message // "")")'
+          # What App Store Connect has (needs ASC secrets)
+          if [ -n "$ASC_API_KEY_P8" ] && [ -n "$ASC_APP_ID" ]; then
+            key=$(printf '%s' "$ASC_API_KEY_P8" | tr -d '\r'); body=$(printf '%s' "$key" | sed -e 's/-----BEGIN PRIVATE KEY-----//' -e 's/-----END PRIVATE KEY-----//' | tr -d ' \n\t')
+            { echo "-----BEGIN PRIVATE KEY-----"; printf '%s' "$body" | fold -w 64; echo; echo "-----END PRIVATE KEY-----"; } > "$RUNNER_TEMP/asc.p8"
+            jwt=$(KEYFILE="$RUNNER_TEMP/asc.p8" node -e "
+              const c=require('crypto'),fs=require('fs');const b=x=>Buffer.from(JSON.stringify(x)).toString('base64url');
+              const h=b({alg:'ES256',kid:process.env.EXPO_ASC_KEY_ID,typ:'JWT'}),p=b({iss:process.env.EXPO_ASC_ISSUER_ID,iat:Math.floor(Date.now()/1000),exp:Math.floor(Date.now()/1000)+600,aud:'appstoreconnect-v1'});
+              const s=c.sign('sha256',Buffer.from(h+'.'+p),{key:fs.readFileSync(process.env.KEYFILE),dsaEncoding:'ieee-p1363'}).toString('base64url');console.log(h+'.'+p+'.'+s)")
+            curl -sS -g "https://api.appstoreconnect.apple.com/v1/builds?filter[app]=$ASC_APP_ID&sort=-uploadedDate&limit=3" -H "Authorization: Bearer $jwt" \
+              | jq -r '(.errors // [] | .[] | "ASC-ERROR \(.title) \(.detail)"), (.data // [] | .[] | "ASC-BUILD \(.attributes.version) \(.attributes.processingState) uploaded \(.attributes.uploadedDate) expired=\(.attributes.expired)")'
+          fi
           exit 0
       - name: Link the Expo project if it isn't yet
         if: ${{ !inputs.only_check }}
