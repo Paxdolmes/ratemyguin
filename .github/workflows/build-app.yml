@@ -79,4 +79,14 @@ jobs:
               '.submit = {($ENV.profile): {ios: {ascAppId: $id, ascApiKeyPath: $key, ascApiKeyId: $kid, ascApiKeyIssuerId: $iss}}}' eas.json > eas.tmp && mv eas.tmp eas.json
             submit="--auto-submit"
           fi
-          npx --yes eas-cli@latest build --platform "$PLATFORM" --profile "$profile" --non-interactive --no-wait $submit
+          if npx --yes eas-cli@latest build --platform "$PLATFORM" --profile "$profile" --non-interactive --no-wait $submit 2>&1 | tee build.log; then
+            grep -q "build command failed" build.log || exit 0
+          fi
+          grep -q "Credentials are not set up" build.log || exit 1
+          # First iPhone build: Expo only makes the Apple signing certificate and profile
+          # interactively, so answer its prompts with the default (yes) through a fake terminal.
+          # It uses the App Store Connect API key, then keeps the credentials for later builds.
+          echo "Setting up Apple signing for the first time"
+          export EAS_BUILD_NO_EXPO_GO_WARNING=true
+          timeout 900 script -qefc "npx --yes eas-cli@latest build --platform $PLATFORM --profile $profile --no-wait $submit" /dev/null < <(while sleep 3; do printf '\r'; done) | tee setup.log
+          grep -qiE "build details|builds/|Build queued" setup.log
