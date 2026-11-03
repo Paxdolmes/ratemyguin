@@ -88,5 +88,5 @@ jobs:
           # It uses the App Store Connect API key, then keeps the credentials for later builds.
           echo "Setting up Apple signing for the first time"
           export EAS_BUILD_NO_EXPO_GO_WARNING=true
-          timeout 900 script -qefc "npx --yes eas-cli@latest build --platform $PLATFORM --profile $profile --no-wait $submit" /dev/null < <(while sleep 3; do printf '\r'; done) | tee setup.log
+          timeout 900 env -u CI -u GITHUB_ACTIONS -u CONTINUOUS_INTEGRATION -u BUILD_NUMBER -u RUN_ID script -qefc "npx --yes eas-cli@latest build --platform $PLATFORM --profile $profile --no-wait $submit" /dev/null < <(while sleep 3; do printf '\r'; done) | tee setup.log
           grep -qiE "build details|builds/|Build queued" setup.log
