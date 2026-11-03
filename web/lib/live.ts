@@ -645,7 +645,7 @@ export async function removePubPhoto(photo: PubPhoto) {
 
 export const OFFER_KINDS = { food: "Food", pint: "Pint", event: "Event", other: "Offer" } as const
 export type OfferKind = keyof typeof OFFER_KINDS
-export type Offer = { id: string; pubId: string; pubName: string; area: string | null; kind: OfferKind; title: string; details: string | null; days: number[]; endsOn: string; metres?: number; lat?: number; lng?: number }
+export type Offer = { id: string; pubId: string; pubName: string; area: string | null; kind: OfferKind; title: string; details: string | null; days: number[]; endsOn: string; metres?: number; lat?: number; lng?: number; source: "pub" | "web"; sourceUrl: string | null; foundOn: string | null }
 
 /** UK rules on alcohol promotions; the database checks this too. */
 export const IRRESPONSIBLE_OFFER =
@@ -653,17 +653,20 @@ export const IRRESPONSIBLE_OFFER =
 
 export async function pubOffers(pubId: string): Promise<Offer[]> {
   const today = new Date().toISOString().slice(0, 10)
-  const { data } = await supabase.from("offers").select("id,pub_id,kind,title,details,days,ends_on").eq("pub_id", pubId)
-    .lte("starts_on", today).gte("ends_on", today).order("ends_on")
-  return ((data ?? []) as { id: string; pub_id: string; kind: OfferKind; title: string; details: string | null; days: number[]; ends_on: string }[])
-    .map((o) => ({ id: o.id, pubId: o.pub_id, pubName: "", area: null, kind: o.kind, title: o.title, details: o.details, days: o.days, endsOn: o.ends_on }))
+  const { data } = await supabase.from("offers").select("id,pub_id,kind,title,details,days,ends_on,source,source_url,found_on").eq("pub_id", pubId)
+    .lte("starts_on", today).gte("ends_on", today).order("source").order("ends_on")
+  type Row = { id: string; pub_id: string; kind: OfferKind; title: string; details: string | null; days: number[]; ends_on: string; source: "pub" | "web"; source_url: string | null; found_on: string | null }
+  return ((data ?? []) as Row[]).map((o) => ({
+    id: o.id, pubId: o.pub_id, pubName: "", area: null, kind: o.kind, title: o.title, details: o.details, days: o.days, endsOn: o.ends_on,
+    source: o.source, sourceUrl: o.source_url, foundOn: o.found_on,
+  }))
 }
 export async function offersNear(lat: number, lng: number, metres = 3000): Promise<Offer[]> {
   const { data } = await supabase.rpc("offers_near", { p_lat: lat, p_lng: lng, p_metres: metres })
-  type Row = { id: string; pub_id: string; pub_name: string; neighbourhood: string | null; kind: OfferKind; title: string; details: string | null; days: number[]; ends_on: string; metres: number; lat: number; lng: number }
+  type Row = { id: string; pub_id: string; pub_name: string; neighbourhood: string | null; kind: OfferKind; title: string; details: string | null; days: number[]; ends_on: string; metres: number; lat: number; lng: number; source: "pub" | "web"; source_url: string | null; found_on: string | null }
   return ((data ?? []) as Row[]).map((o) => ({
     id: o.id, pubId: o.pub_id, pubName: o.pub_name, area: o.neighbourhood, kind: o.kind, title: o.title, details: o.details,
-    days: o.days, endsOn: o.ends_on, metres: o.metres, lat: o.lat, lng: o.lng,
+    days: o.days, endsOn: o.ends_on, metres: o.metres, lat: o.lat, lng: o.lng, source: o.source, sourceUrl: o.source_url, foundOn: o.found_on,
   }))
 }
 export async function addOffer(pubId: string, o: { kind: OfferKind; title: string; details: string | null; days: number[]; endsOn: string }) {
@@ -683,4 +686,24 @@ export async function featuredPubs(city?: string): Promise<FeaturedPub[]> {
   const rows = ((data ?? []) as Row[]).map((r) => ({ id: r.id, name: r.name, area: r.neighbourhood, city: r.city, lat: r.lat, lng: r.lng, logoUrl: r.logo_url, imageUrl: r.image_url }))
   // A fair rotation, so no featured pub is always first.
   return rows.sort(() => Math.random() - 0.5)
+}
+
+// ── New openings ───────────────────────────────────────────────────────────
+export type Opening = {
+  id: string; name: string; address: string | null; area: string | null; status: "open" | "coming_soon"; label: string
+  blurb: string | null; sourceName: string; sourceUrl: string; pubId: string | null
+}
+export async function openings(): Promise<Opening[]> {
+  const { data } = await supabase.from("openings").select("id,name,address,neighbourhood,status,opened_label,blurb,source_name,source_url,pub_id").order("sort_on", { ascending: false })
+  type Row = { id: string; name: string; address: string | null; neighbourhood: string | null; status: Opening["status"]; opened_label: string; blurb: string | null; source_name: string; source_url: string; pub_id: string | null }
+  return ((data ?? []) as Row[]).map((o) => ({
+    id: o.id, name: o.name, address: o.address, area: o.neighbourhood, status: o.status, label: o.opened_label,
+    blurb: o.blurb, sourceName: o.source_name, sourceUrl: o.source_url, pubId: o.pub_id,
+  }))
+}
+/** Pubs OpenStreetMap says opened in the last 18 months. */
+export async function recentlyOpenedPubs(): Promise<Pub[]> {
+  const since = new Date(Date.now() - 548 * 86400000).toISOString().slice(0, 10)
+  const { data } = await supabase.from("pub_directory").select(COLS).gte("opened_on", since).order("opened_on", { ascending: false }).limit(30)
+  return ((data ?? []) as unknown as DirectoryRow[]).map((r) => toPub(r))
 }

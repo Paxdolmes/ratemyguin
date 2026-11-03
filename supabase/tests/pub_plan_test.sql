@@ -104,3 +104,16 @@ do $$ declare n int; begin
   select count(*) into n from private.alerts_to_send() where pub_id = '00000000-0000-0000-0000-000000000c91';
   assert n = 0, 'alerts are sent once a week';
 end $$;
+
+-- Offers found on a pub's website need a source and come after the pub's own offers.
+do $$ begin
+  insert into public.offers (pub_id, kind, title, ends_on, source) values ('00000000-0000-0000-0000-000000000c92', 'food', 'Steak night £20', current_date + 6, 'web');
+  raise exception 'web offers need a source';
+exception when check_violation then null;
+end $$;
+insert into public.offers (pub_id, kind, title, ends_on, source, source_url, found_on)
+values ('00000000-0000-0000-0000-000000000c92', 'food', 'Steak night £20', current_date + 6, 'web', 'https://example.com/offers', current_date);
+do $$ begin
+  assert (select source from public.offers_near(53.96, -1.0805, 1000) limit 1) = 'pub', 'pub offers first';
+  assert (select count(*) from public.offers_near(53.96, -1.0805, 1000)) = 2, 'both offers near';
+end $$;

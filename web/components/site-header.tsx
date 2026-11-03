@@ -11,8 +11,10 @@ import { cn } from "@/lib/utils"
 const NAV = [
   { href: "/", label: "Rankings" },
   { href: "/map", label: "Map" },
+  { href: "/new", label: "New openings" },
+  { href: "/offers", label: "Offers" },
   { href: "/passport", label: "Passport" },
-  { href: "/scoring", label: "How scoring works" },
+  { href: "/scoring", label: "Scoring" },
 ]
 
 export function SiteHeader() {

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { Footprints, LocateFixed, Tag } from "lucide-react"
 import { MapLoader } from "@/components/map/map-loader"
-import { offerDays } from "@/components/pub/pub-extras"
+import { OfferSource, offerDays } from "@/components/pub/pub-extras"
 import { OFFER_KINDS, offersNear, type Offer } from "@/lib/live"
 import { FULHAM_BROADWAY, pubHref } from "@/lib/pubs"
 import { cn } from "@/lib/utils"
@@ -53,7 +53,7 @@ export default function OffersPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-pub">Offers near me</p>
           <h1 className="font-display text-5xl font-semibold leading-[0.95] md:text-6xl">Deals from pubs nearby.</h1>
           <p className="max-w-2xl text-muted-foreground text-pretty">
-            Food deals, quiz nights and fair-priced pints, posted by the pubs themselves and running today. Offers never affect the
+            Food deals, quiz nights and fair-priced pints, posted by pubs or found on their own websites. Offers never affect the
             rankings, and we don&apos;t allow ones that push you to drink more.
           </p>
           <div className="flex flex-wrap items-center gap-2 pt-2">
@@ -96,7 +96,7 @@ export default function OffersPage() {
                 <Tag className="mt-1 size-5 shrink-0 text-pub" aria-hidden="true" />
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
                   <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-pub">
-                    {OFFER_KINDS[o.kind]} offer · {offerDays(o.days)}
+                    {o.source === "web" ? "From the pub's website" : `${OFFER_KINDS[o.kind]} offer`} · {offerDays(o.days)}
                   </span>
                   <h2 className="font-display text-2xl font-semibold leading-tight">{o.title}</h2>
                   {o.details && <p className="text-sm">{o.details}</p>}
@@ -117,6 +117,7 @@ export default function OffersPage() {
                       </a>
                     )}
                   </p>
+                  <OfferSource offer={o} />
                 </div>
               </article>
             ))
