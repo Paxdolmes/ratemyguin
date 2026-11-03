@@ -153,7 +153,7 @@ export function PubPlanSection({ pub }: { pub: Pub }) {
   )
 }
 
-function Upgrade({ pub }: { pub: Pub }) {
+export function Upgrade({ pub }: { pub: Pub }) {
   const perks: [typeof Crown, string, string][] = [
     [AlertTriangle, "Quality alerts", "An email when your pour or temperature scores dip, so you can check the lines that day."],
     [MapPinned, "Local comparison", "How you rank against the 10 nearest pubs, and what drinkers praise there."],
